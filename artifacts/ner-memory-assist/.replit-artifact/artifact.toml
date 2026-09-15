@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NER Memory Assist"
+description = "An offline-first cognitive engagement and memory assistance PWA for elderly users, caregivers, and healthcare workers in the North Eastern Region of India."
+version = "1.0.0"
+id = "artifacts/ner-memory-assist"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20557
+
+[services.development]
+run = "pnpm --filter @workspace/ner-memory-assist run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ner-memory-assist", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ner-memory-assist/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20557"
+BASE_PATH = "/"
