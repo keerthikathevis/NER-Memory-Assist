@@ -1,0 +1,197 @@
+Continue building the existing “NER Memory Assist” project. DO NOT rebuild the project from scratch and DO NOT remove or break any existing features.
+
+STAGE 2: MULTILINGUAL COGNITIVE GAMES + NER CULTURAL CONTENT
+
+Goal:
+Turn the existing game architecture into working, interactive games that can be demonstrated to SIH judges.
+
+1. PERSONALIZED JIGSAW
+Create a fully working elderly-friendly jigsaw game.
+
+Features:
+- Start with 4 pieces.
+- Difficulty levels: Easy 4 pieces, Medium 6 pieces, Hard 9 pieces.
+- Use a built-in demo/family-style image if no personal image exists.
+- Large draggable/touch-friendly pieces.
+- Show clear visual and spoken-style instructions.
+- Add Start, Pause, Restart, Hint and Home controls.
+- No stressful countdown timer.
+- When completed, show a positive result screen.
+- Record score, accuracy, attempts, hints used, completion time and difficulty.
+- Save results locally.
+
+2. FAMILY MEMBER MATCH-IT
+Create a fully working matching game.
+
+Each memory profile can contain:
+- Photo
+- Name
+- Relationship
+- Voice-note reference
+
+For the demo, create sample profiles without requiring the patient to upload anything.
+
+Game levels:
+- Photo → same person
+- Photo → name
+- Photo → relationship
+
+Use caregiver-configured relationships only. Never infer relationships using AI.
+
+3. PERSONAL MEMORY PROFILES
+Create a caregiver interface to add/edit/remove profiles.
+
+Maximum:
+25 active profiles.
+
+Each profile:
+- Photo
+- Name
+- Relationship
+- Voice note
+- Optional description
+
+Show:
+“Personal Memories: X/25”
+
+If 25 profiles exist, prevent adding another until one is removed.
+
+Store demo data locally so the feature works offline.
+
+4. NER CULTURAL JIGSAW
+Create a separate cultural game using NER-themed demo content.
+
+Create cards/content for:
+- Kamakhya Temple
+- Tawang Monastery
+- Loktak Lake
+- Kaziranga
+- Mawlynnong
+- NER landscapes
+- regional animals
+- traditional objects
+- food
+- clothing
+- festivals
+
+Use generated/simple placeholder illustrations or clearly marked demo assets if licensed images are unavailable. Do NOT copy copyrighted images.
+
+5. NER CULTURAL MATCH-IT
+Create a working matching game using the same cultural dataset.
+
+Examples:
+- landmark → landmark
+- animal → animal
+- object → object
+- food → food
+
+6. ADAPTIVE DIFFICULTY
+Connect all games to the existing adaptive-engine service.
+
+Use observed gameplay data:
+- accuracy
+- attempts
+- hints
+- completion time
+- recent performance
+
+Rules:
+- Strong performance → increase difficulty.
+- Repeated difficulty → reduce difficulty.
+- Keep adaptation transparent and non-diagnostic.
+
+Do NOT claim that game performance diagnoses dementia or any medical condition.
+
+7. MULTILINGUAL UI
+Make the complete game experience translatable.
+
+Support these languages in the interface:
+English
+Tamil
+Hindi
+Assamese
+Bengali
+Bodo
+Meitei/Manipuri
+Khasi
+Mizo
+Nepali
+
+Translate:
+- Game names
+- Instructions
+- Buttons
+- Difficulty labels
+- Results
+- Hints
+- Error/success messages
+- Navigation
+- Caregiver controls
+
+Use a proper i18n translation dictionary architecture so additional languages can be added later.
+
+IMPORTANT:
+Do not claim that browser speech recognition supports every listed language.
+
+8. VOICE-READY GAME CONTROLS
+Connect the existing voice-assistant architecture to the games.
+
+Recognize these commands where the selected browser/device language supports speech recognition:
+- Start
+- Pause
+- Continue
+- Restart
+- Help
+- Repeat
+- Easier
+- Harder
+- Hint
+- Go Home
+
+Create the intent mappings so the same voice command system can later be connected to offline multilingual speech models.
+
+9. ACCESSIBILITY
+Make all games:
+- mobile-first
+- tablet-friendly
+- large-button
+- high contrast
+- large text
+- simple navigation
+- touch friendly
+- keyboard accessible
+- suitable for elderly users
+
+10. PATIENT HOME
+Make sure the Games section clearly displays:
+- Personalized Games
+- NER Cultural Games
+- My Progress
+
+11. CAREGIVER DASHBOARD
+Display:
+- games completed today
+- latest scores
+- accuracy
+- current difficulty
+- recent performance
+- personal memory profile count
+
+12. OFFLINE
+All game logic and game results must work without an internet connection.
+Use the existing local storage/offline architecture.
+Do not add paid APIs.
+
+13. TESTING
+After implementation:
+- run the project
+- fix TypeScript/build errors
+- verify all game routes work
+- verify language switching works
+- verify local game results are saved
+- verify the 25-profile limit works
+- verify patient and caregiver navigation still works
+
+Do not publish a new version unless necessary. Keep the existing published project intact.
+
+At the end, summarize exactly what was implemented and any remaining limitations.

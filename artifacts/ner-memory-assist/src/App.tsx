@@ -1,185 +1,444 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  Activity, ArrowLeft, Bell, BookOpen, Brain, Check, ChevronRight, CircleHelp, Clock3,
+  CloudOff, Flower2, Gamepad2, Heart, Home as HomeIcon, Languages, Lightbulb, LockKeyhole,
+  Menu, Mic, Music2, Pause, Pencil, Play, Plus, RotateCcw, Settings as SettingsIcon,
+  ShieldCheck, Sparkles, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume2,
+  Wifi, X, type LucideIcon,
+} from 'lucide-react';
+import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import {
-  Activity, ArrowLeft, Bell, BookOpen, Brain, Check, ChevronRight, CircleHelp,
-  Clock3, CloudOff, Flower2, Gamepad2, Heart, Home as HomeIcon, Languages, Leaf, Lightbulb,
-  ListMusic, LockKeyhole, Menu, Mic, Music2, Pause, Play, Plus, Settings as SettingsIcon,
-  ShieldCheck, Sparkles, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume2,
-  Wifi, type LucideIcon
-} from 'lucide-react';
-import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { adaptDifficulty, scoreGame, type Difficulty, type GameResult } from '@/lib/adaptive-engine';
+import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';
+import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
+import { getGameResults, getMemoryProfiles, readStore, saveGameResult, type MemoryProfile, writeStore } from '@/lib/storage';
 
 const queryClient = new QueryClient();
 
-type Lang = 'en' | 'ta' | 'hi' | 'as' | 'bn' | 'brx' | 'mni' | 'kha' | 'lus' | 'ne';
-type Role = 'patient' | 'caregiver' | 'healthcare';
-type Key = keyof typeof en;
-
-const languages: { id: Lang; label: string; native: string }[] = [
-  { id: 'en', label: 'English', native: 'English' }, { id: 'ta', label: 'Tamil', native: 'தமிழ்' },
-  { id: 'hi', label: 'Hindi', native: 'हिन्दी' }, { id: 'as', label: 'Assamese', native: 'অসমীয়া' },
-  { id: 'bn', label: 'Bengali', native: 'বাংলা' }, { id: 'brx', label: 'Bodo', native: 'बर’' },
-  { id: 'mni', label: 'Meitei / Manipuri', native: 'মৈতৈ' }, { id: 'kha', label: 'Khasi', native: 'Khasi' },
-  { id: 'lus', label: 'Mizo', native: 'Mizo' }, { id: 'ne', label: 'Nepali', native: 'नेपाली' },
-];
-const en = {
-  welcome: 'A gentle moment, every day.', welcomeSub: 'Memory support made for you, your family, and your home.',
-  chooseLanguage: 'Choose your language', chooseRole: 'Who is using NER Memory Assist?', patient: 'For me',
-  caregiver: 'For a family member', healthcare: 'For my care team', continue: 'Continue', goodMorning: 'Good morning',
-  today: 'Today', calmStart: 'A calm start to your day', nextMedicine: 'Next medicine', dueAt: 'Due at',
-  taken: 'Taken', takeNow: 'Take now', later: 'Later', done: 'Done', welcomeBack: 'Welcome back',
-  home: 'Home', games: 'Games', medicine: 'Medicine', music: 'Music', memories: 'Memories', progress: 'Progress',
-  settings: 'Settings', caregiverView: 'Caregiver view', healthcareView: 'Healthcare view', voice: 'Voice helper',
-  voiceHint: 'Tap and speak. I can help you find your way.', listening: 'Listening…', micUnavailable: 'Voice is not available on this browser.',
-  offline: 'Working offline', synced: 'Saved on this device', privacy: 'Your memories stay on this device. This app does not diagnose or replace medical advice.',
-  play: 'Play', pause: 'Pause', chooseGame: 'Choose a gentle game', gameHint: 'A few minutes of play can be a lovely daily habit.',
-  easy: 'Easy', steady: 'Steady', challenge: 'Challenge', begin: 'Begin game', round: 'Round', score: 'Score',
-  gameComplete: 'Lovely work', gameCompleteSub: 'You finished today’s round. Every little practice counts.',
-  playAgain: 'Play again', medicineTitle: 'Your medicines', medicineHint: 'A simple reminder, just when you need it.',
-  morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', memoryTitle: 'Family memories',
-  memoryHint: 'Keep familiar faces and stories close.', addMemory: 'Add a memory', memoryName: 'Name',
-  memoryNote: 'A small note', save: 'Save memory', remove: 'Remove', noMemories: 'Your memory shelf is ready for its first story.',
-  musicTitle: 'Music for the heart', musicHint: 'Familiar sounds can help us feel at home.', nowPlaying: 'Now playing',
-  progressTitle: 'Your gentle progress', progressHint: 'This is a wellbeing view, not a medical measurement.',
-  minutes: 'minutes', sessions: 'sessions', thisWeek: 'This week', settingsTitle: 'Settings', language: 'Language',
-  role: 'Current role', textSize: 'Text size', large: 'Large', normal: 'Comfortable', notifications: 'Reminders',
-  privacyTitle: 'Privacy & trust', about: 'About NER Memory Assist', reset: 'Reset demo data', resetConfirm: 'Demo data reset.',
-  caregiverTitle: 'Caregiver circle', caregiverHint: 'A clear, kind view of the day.', patientName: 'Amina Das',
-  lastActive: 'Last active', supportiveNote: 'No urgent concerns. Keep the rhythm gentle.', viewPatient: 'View patient home',
-  healthcareTitle: 'Care team view', healthcareHint: 'Shared context without diagnosis.', engagement: 'Engagement',
-  weekSummary: 'Week at a glance', privacyShort: 'Non-diagnostic · private on device', back: 'Back',
-} as const;
-
-const translations: Partial<Record<Lang, Partial<Record<Key, string>>>> = {
-  hi: { welcome: 'हर दिन, एक सुकून भरा पल।', chooseLanguage: 'अपनी भाषा चुनें', chooseRole: 'NER Memory Assist कौन उपयोग कर रहा है?', patient: 'मेरे लिए', caregiver: 'परिवार के सदस्य के लिए', healthcare: 'मेरी देखभाल टीम के लिए', continue: 'आगे बढ़ें', home: 'होम', games: 'खेल', medicine: 'दवा', music: 'संगीत', memories: 'यादें', progress: 'प्रगति', settings: 'सेटिंग्स', goodMorning: 'सुप्रभात', takeNow: 'अभी लें', taken: 'ले ली', save: 'याद सहेजें', privacy: 'आपकी यादें इसी डिवाइस पर रहती हैं। यह ऐप निदान नहीं करता।' },
-  as: { welcome: 'প্ৰতিদিনে এটা শান্ত মুহূৰ্ত।', chooseLanguage: 'আপোনাৰ ভাষা বাছক', chooseRole: 'NER Memory Assist কোনে ব্যৱহাৰ কৰিছে?', patient: 'মোৰ বাবে', caregiver: 'পৰিয়ালৰ সদস্যৰ বাবে', healthcare: 'মোৰ যত্ন দলৰ বাবে', continue: 'আগবাঢ়ক', home: 'ঘৰ', games: 'খেল', medicine: 'ঔষধ', music: 'সংগীত', memories: 'স্মৃতি', progress: 'অগ্ৰগতি', settings: 'ছেটিংছ' },
-  bn: { welcome: 'প্রতিদিন একটি শান্ত মুহূর্ত।', chooseLanguage: 'আপনার ভাষা বেছে নিন', chooseRole: 'কে NER Memory Assist ব্যবহার করছেন?', patient: 'আমার জন্য', caregiver: 'পরিবারের সদস্যের জন্য', healthcare: 'আমার পরিচর্যা দলের জন্য', continue: 'এগিয়ে যান', home: 'হোম', games: 'খেলা', medicine: 'ওষুধ', music: 'সঙ্গীত', memories: 'স্মৃতি', progress: 'অগ্রগতি', settings: 'সেটিংস' },
-  ta: { welcome: 'ஒவ்வொரு நாளும் ஒரு அமைதியான தருணம்.', chooseLanguage: 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்', chooseRole: 'NER Memory Assist யாருக்காக?', patient: 'எனக்காக', caregiver: 'குடும்ப உறுப்பினருக்காக', healthcare: 'என் பராமரிப்பு குழுவுக்காக', continue: 'தொடரவும்', home: 'முகப்பு', games: 'விளையாட்டுகள்', medicine: 'மருந்து', music: 'இசை', memories: 'நினைவுகள்', progress: 'முன்னேற்றம்', settings: 'அமைப்புகள்' },
-  ne: { welcome: 'हरेक दिन, शान्त क्षण।', chooseLanguage: 'आफ्नो भाषा छान्नुहोस्', chooseRole: 'NER Memory Assist कसले प्रयोग गर्दैछ?', patient: 'मेरो लागि', caregiver: 'परिवारका लागि', healthcare: 'हेरचाह टोलीका लागि', continue: 'अगाडि बढ्नुहोस्', home: 'गृह', games: 'खेल', medicine: 'औषधि', music: 'सङ्गीत', memories: 'सम्झना', progress: 'प्रगति', settings: 'सेटिङहरू' },
-  kha: { welcome: 'Ka por ka sngi, ka por ba jai jai.', chooseLanguage: 'Jied ia ka ktien jong phi', continue: 'Bteng', home: 'Ing', games: 'Ki jingïalehkai', medicine: 'Dawai', music: 'Ka jingrwai', memories: 'Ki jingkynmaw', progress: 'Ka jingiaid shaphrang', settings: 'Settings' },
-  lus: { welcome: 'Ni tinah, hun leh mu zawng.', chooseLanguage: 'I tawng thlan rawh', continue: 'Kal zel rawh', home: 'In', games: 'Infiamna', medicine: 'Damdawi', music: 'Hla', memories: 'Hriat rengte', progress: 'Hma sawnna', settings: 'Settings' },
-  brx: { welcome: 'सानफ्रुम दाउ फेसे।', chooseLanguage: 'नोंनि राव सायख’', continue: 'जाथाव', home: 'नाव', games: 'खेल', medicine: 'दावाइ', music: 'सुर', memories: 'मोनसे', progress: 'जौगानाय', settings: 'सेटिंग' },
-  mni: { welcome: 'নুংশি নুংশি নুংশি।', chooseLanguage: 'নখোয়গী লোন শান্নবা', continue: 'মখা চত্থরো', home: 'ইমুং', games: 'খেল', medicine: 'ওষুধ', music: 'মরুওই', memories: 'মপুং', progress: 'হৌদোকপা', settings: 'সেটিং' },
+const tr = (lang: Lang, key: CopyKey) => t(lang, key);
+const colors: Record<CulturalItem['color'], string> = {
+  saffron: 'bg-[hsl(35_75%_76%)]',
+  teal: 'bg-[hsl(174_35%_72%)]',
+  leaf: 'bg-[hsl(133_30%_70%)]',
+  rose: 'bg-[hsl(14_62%_78%)]',
+  sky: 'bg-[hsl(201_47%_78%)]',
 };
-
-const getStore = <T,>(key: string, fallback: T): T => {
-  try { const value = localStorage.getItem(key); return value ? JSON.parse(value) as T : fallback; } catch { return fallback; }
-};
-const setStore = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 
 function useAppPrefs() {
-  const [lang, setLangState] = useState<Lang>(() => getStore('ner-lang', 'en'));
-  const [role, setRoleState] = useState<Role>(() => getStore('ner-role', 'patient'));
-  const setLang = (value: Lang) => { setLangState(value); setStore('ner-lang', value); };
-  const setRole = (value: Role) => { setRoleState(value); setStore('ner-role', value); };
+  const [lang, setLangState] = useState<Lang>(() => readStore('ner-lang', 'en' as Lang));
+  const [role, setRoleState] = useState<Role>(() => readStore('ner-role', 'patient' as Role));
+  const setLang = (value: Lang) => { setLangState(value); writeStore('ner-lang', value); };
+  const setRole = (value: Role) => { setRoleState(value); writeStore('ner-role', value); };
   return { lang, role, setLang, setRole };
 }
 
-function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; role: Role; setLang: (l: Lang) => void; setRole: (r: Role) => void }) {
+type SpeechRecognitionLike = {
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+};
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognition() {
+  const browser = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+}
+
+function normalizeCommand(command: string) {
+  return command.toLowerCase().replace(/[.,!?]/g, '').trim();
+}
+
+function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; role: Role }) {
   const [location, setLocation] = useLocation();
   const [listening, setListening] = useState(false);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [drawer, setDrawer] = useState(false);
-  const tr = (key: Key) => translations[lang]?.[key] ?? en[key];
-  useEffect(() => { const on = () => setOffline(false); const off = () => setOffline(true); window.addEventListener('online', on); window.addEventListener('offline', off); return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); }; }, []);
-  const nav = [
+  const translate = (key: CopyKey) => tr(lang, key);
+  const speechSupported = Boolean(getSpeechRecognition());
+
+  useEffect(() => {
+    const on = () => setOffline(false);
+    const off = () => setOffline(true);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
+  const nav: [string, CopyKey, LucideIcon][] = [
     ['/patient', 'home', HomeIcon], ['/games', 'games', Gamepad2], ['/medicine', 'medicine', Bell],
     ['/music', 'music', Music2], ['/memories', 'memories', UsersRound], ['/progress', 'progress', Activity],
-  ] as const;
-  const speak = () => {
-    const Speech = (window as typeof window & { webkitSpeechRecognition?: new () => { start: () => void; onend: (() => void) | null } }).webkitSpeechRecognition;
-    if (!Speech) { setListening(true); window.setTimeout(() => setListening(false), 1800); return; }
-    const recognition = new Speech(); setListening(true); recognition.onend = () => setListening(false); recognition.start();
+  ];
+
+  const dispatchVoiceCommand = (command: string) => {
+    const normalized = normalizeCommand(command);
+    const navigation: Record<string, string> = {
+      'go home': '/patient', home: '/patient', 'open games': '/games', games: '/games',
+      'open medicine': '/medicine', medicine: '/medicine', 'open memories': '/memories', memories: '/memories',
+      'open music': '/music', music: '/music', 'show progress': '/progress', progress: '/progress',
+      settings: '/settings',
+    };
+    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase))?.[1];
+    if (target) setLocation(target);
+    window.dispatchEvent(new CustomEvent('ner-voice-command', { detail: normalized }));
   };
-  const titleKey: Record<string, Key> = { '/patient': 'home', '/games': 'games', '/medicine': 'medicine', '/music': 'music', '/memories': 'memories', '/progress': 'progress', '/caregiver': 'caregiverView', '/healthcare': 'healthcareView', '/settings': 'settings' };
-  const activeTitle = tr(titleKey[location] ?? 'home');
-  return <div className="shell-bg min-h-[100dvh]">
-    <aside className={`fixed inset-y-0 left-0 z-30 w-72 bg-[hsl(var(--sidebar))] p-5 text-[hsl(var(--sidebar-foreground))] transition-transform md:translate-x-0 ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>
-      <div className="mb-8 flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"><Flower2 size={26}/></div><div><p className="serif text-xl">NER</p><p className="text-xs tracking-[.18em] opacity-70">MEMORY ASSIST</p></div></div>
-      <nav className="space-y-2">{nav.map(([href, key, Icon]) => <Link key={href} href={href} onClick={() => setDrawer(false)} data-testid={`link-${key}`} className={`flex min-h-14 items-center gap-4 rounded-2xl px-4 text-base transition-colors ${location === href ? 'bg-white/15 font-bold' : 'opacity-80 hover:bg-white/10'}`}><Icon size={23}/><span>{tr(key)}</span></Link>)}</nav>
-      <div className="mt-8 border-t border-white/15 pt-5"><Link href={role === 'caregiver' ? '/caregiver' : role === 'healthcare' ? '/healthcare' : '/settings'} data-testid="link-role-view" className="flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10"><ShieldCheck size={22}/><span>{role === 'patient' ? tr('settings') : role === 'caregiver' ? tr('caregiverView') : tr('healthcareView')}</span></Link><Link href="/settings" data-testid="link-settings" className="mt-2 flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10"><SettingsIcon size={22}/><span>{tr('settings')}</span></Link></div>
-      <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed opacity-85"><LockKeyhole size={16} className="mb-2"/>{tr('privacy')}</div>
-    </aside>
-    {drawer && <button aria-label="Close menu" data-testid="button-close-menu" className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setDrawer(false)}/>}
-    <div className="md:pl-72">
-      <header className="sticky top-0 z-10 flex min-h-20 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/.9)] px-4 backdrop-blur md:px-8">
-        <div className="flex items-center gap-3"><button className="rounded-xl p-3 md:hidden" data-testid="button-open-menu" onClick={() => setDrawer(true)}><Menu size={24}/></button><div><p className="text-xs uppercase tracking-[.17em] text-[hsl(var(--muted-foreground))]">NER Memory Assist</p><h1 className="serif text-2xl font-semibold capitalize">{activeTitle}</h1></div></div>
-        <div className="flex items-center gap-2"><div className={`hidden items-center gap-2 rounded-full px-3 py-2 text-xs sm:flex ${offline ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--primary)/.12)]'}`}>{offline ? <CloudOff size={15}/> : <Wifi size={15}/>}<span>{offline ? tr('offline') : tr('synced')}</span></div><button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid="button-voice" onClick={speak} title={tr('voice')}><Mic size={22}/></button></div>
-      </header>
-      <main className="mx-auto max-w-6xl p-4 pb-28 md:p-8">{listening && <div className="pop mb-5 flex items-center gap-3 rounded-2xl border border-[hsl(var(--accent)/.3)] bg-[hsl(var(--accent)/.12)] p-4 text-sm"><Volume2 size={20}/><span>{SpeechRecognitionAvailable() ? tr('listening') : tr('micUnavailable')}</span></div>}{children}</main>
-      <nav className="fixed bottom-0 left-0 right-0 z-20 flex justify-around border-t border-[hsl(var(--border))] bg-[hsl(var(--card)/.96)] p-2 backdrop-blur md:hidden">{nav.slice(0, 5).map(([href, key, Icon]) => <Link key={href} href={href} data-testid={`mobile-link-${key}`} className={`flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 rounded-xl text-xs ${location === href ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))] font-bold' : 'text-[hsl(var(--muted-foreground))]'}`}><Icon size={20}/><span>{tr(key)}</span></Link>)}</nav>
+
+  const speak = () => {
+    const Speech = getSpeechRecognition();
+    if (!Speech) {
+      setListening(true);
+      window.setTimeout(() => setListening(false), 1800);
+      return;
+    }
+    const recognition = new Speech();
+    recognition.lang = languageOptions.find((item) => item.id === lang)?.speechLocale ?? 'en-IN';
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? '';
+      dispatchVoiceCommand(transcript);
+    };
+    setListening(true);
+    try { recognition.start(); } catch { setListening(false); }
+  };
+
+  const titleKey: Record<string, CopyKey> = {
+    '/patient': 'home', '/games': 'games', '/medicine': 'medicine', '/music': 'music',
+    '/memories': 'memories', '/progress': 'progress', '/caregiver': 'caregiverView',
+    '/healthcare': 'healthcareView', '/settings': 'settings',
+  };
+
+  return (
+    <div className="shell-bg min-h-[100dvh]">
+      <aside className={`fixed inset-y-0 left-0 z-30 w-72 bg-[hsl(var(--sidebar))] p-5 text-[hsl(var(--sidebar-foreground))] transition-transform md:translate-x-0 ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="mb-8 flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26} /></div>
+          <div><p className="serif text-xl">NER</p><p className="text-xs tracking-[.18em] opacity-70">MEMORY ASSIST</p></div>
+        </div>
+        <nav className="space-y-2">
+          {nav.map(([href, key, Icon]) => (
+            <Link key={href} href={href} onClick={() => setDrawer(false)} data-testid={`link-${key}`} className={`flex min-h-14 items-center gap-4 rounded-2xl px-4 text-base transition-colors ${location === href ? 'bg-white/15 font-bold' : 'opacity-80 hover:bg-white/10'}`}>
+              <Icon size={23} /><span>{translate(key)}</span>
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-8 border-t border-white/15 pt-5">
+          <Link href={role === 'caregiver' ? '/caregiver' : role === 'healthcare' ? '/healthcare' : '/settings'} className="flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10">
+            <ShieldCheck size={22} /><span>{role === 'patient' ? translate('settings') : role === 'caregiver' ? translate('caregiverView') : translate('healthcareView')}</span>
+          </Link>
+          <Link href="/settings" className="mt-2 flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10"><SettingsIcon size={22} /><span>{translate('settings')}</span></Link>
+        </div>
+        <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed opacity-85"><LockKeyhole size={16} className="mb-2" />{translate('privacy')}</div>
+      </aside>
+      {drawer && <button aria-label={translate('close')} className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setDrawer(false)} />}
+      <div className="md:pl-72">
+        <header className="sticky top-0 z-10 flex min-h-20 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/.9)] px-4 backdrop-blur md:px-8">
+          <div className="flex items-center gap-3">
+            <button className="rounded-xl p-3 md:hidden" aria-label={translate('open')} onClick={() => setDrawer(true)}><Menu size={24} /></button>
+            <div><p className="text-xs uppercase tracking-[.17em] text-[hsl(var(--muted-foreground))]">{translate('appTitle')}</p><h1 className="serif text-2xl font-semibold capitalize">{translate(titleKey[location] ?? 'home')}</h1></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`hidden items-center gap-2 rounded-full px-3 py-2 text-xs sm:flex ${offline ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--primary)/.12)]'}`}>
+              {offline ? <CloudOff size={15} /> : <Wifi size={15} />}<span>{offline ? translate('offline') : translate('savedOnDevice')}</span>
+            </div>
+            <button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid="button-voice" onClick={speak} title={translate('voice')}><Mic size={22} /></button>
+          </div>
+        </header>
+        <main className="mx-auto max-w-6xl p-4 pb-28 md:p-8">
+          {listening && <div className="pop mb-5 flex items-center gap-3 rounded-2xl border border-[hsl(var(--accent)/.3)] bg-[hsl(var(--accent)/.12)] p-4 text-sm"><Volume2 size={20} /><span>{speechSupported ? translate('listening') : translate('micUnavailable')}</span></div>}
+          {!speechSupported && <p className="mb-5 text-center text-xs text-[hsl(var(--muted-foreground))]">{translate('speechNote')}</p>}
+          {children}
+        </main>
+        <nav className="fixed bottom-0 left-0 right-0 z-20 flex justify-around border-t border-[hsl(var(--border))] bg-[hsl(var(--card)/.96)] p-2 backdrop-blur md:hidden">
+          {nav.slice(0, 5).map(([href, key, Icon]) => <Link key={href} href={href} className={`flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 rounded-xl text-xs ${location === href ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))] font-bold' : 'text-[hsl(var(--muted-foreground))]'}`}><Icon size={20} /><span>{translate(key)}</span></Link>)}
+        </nav>
+      </div>
     </div>
-  </div>;
+  );
 }
-function SpeechRecognitionAvailable() { return Boolean((window as typeof window & { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition); }
 
 function Welcome({ lang, role, setLang, setRole }: { lang: Lang; role: Role; setLang: (l: Lang) => void; setRole: (r: Role) => void }) {
-  const [, setLocation] = useLocation(); const tr = (key: Key) => translations[lang]?.[key] ?? en[key];
-  return <div className="shell-bg min-h-[100dvh] p-4 md:p-10"><div className="mx-auto grid min-h-[calc(100dvh-2rem)] max-w-6xl overflow-hidden rounded-[2rem] card-surface md:grid-cols-[.9fr_1.1fr]">
-    <section className="relative flex flex-col justify-between overflow-hidden bg-[hsl(var(--sidebar))] p-7 text-[hsl(var(--sidebar-foreground))] md:p-12"><div className="absolute -right-16 -top-10 h-64 w-64 rounded-full border-[34px] border-[hsl(var(--accent)/.4)]"/><div className="relative"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26}/></div><span className="tracking-[.2em]">NER</span></div><div className="mt-24 max-w-sm"><p className="mb-4 text-sm uppercase tracking-[.2em] opacity-65">North Eastern Region</p><h1 className="serif text-5xl leading-[1.05] md:text-6xl">{tr('welcome')}</h1><p className="mt-6 text-lg leading-relaxed opacity-80">{tr('welcomeSub')}</p></div></div><div className="relative mt-12 flex items-end gap-3"><div className="h-20 w-20 rounded-t-full bg-[hsl(var(--secondary)/.7)]"/><div className="h-28 w-28 rounded-t-full bg-[hsl(var(--accent)/.75)]"/><div className="h-16 w-16 rounded-t-full bg-[hsl(var(--secondary)/.5)]"/></div></section>
-    <section className="flex flex-col justify-center p-6 md:p-12"><div className="mx-auto w-full max-w-xl">
-      <div className="mb-8"><div className="mb-3 flex items-center gap-2 text-[hsl(var(--primary))]"><Languages size={21}/><span className="font-bold">{tr('chooseLanguage')}</span></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{languages.map(item => <button key={item.id} onClick={() => setLang(item.id)} data-testid={`button-language-${item.id}`} className={`min-h-14 rounded-2xl border px-3 text-left transition-all ${lang === item.id ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)] ring-2 ring-[hsl(var(--primary)/.2)]' : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'}`}><span className="block text-sm font-bold">{item.native}</span><span className="text-xs text-[hsl(var(--muted-foreground))]">{item.label}</span></button>)}</div></div>
-      <div className="mb-8"><div className="mb-3 flex items-center gap-2 text-[hsl(var(--primary))]"><UserRound size={21}/><span className="font-bold">{tr('chooseRole')}</span></div><div className="space-y-3">{(['patient', 'caregiver', 'healthcare'] as Role[]).map((item) => { const Icon = item === 'patient' ? UserRound : item === 'caregiver' ? Heart : Stethoscope; return <button key={item} onClick={() => setRole(item)} data-testid={`button-role-${item}`} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${role === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)] ring-2 ring-[hsl(var(--primary)/.2)]' : 'border-[hsl(var(--border))]'}`}><Icon size={25} className="text-[hsl(var(--primary))]"/><span className="font-bold">{tr(item)}</span>{role === item && <Check className="ml-auto text-[hsl(var(--primary))]"/>}</button> })}</div></div>
-      <button onClick={() => setLocation(role === 'patient' ? '/patient' : role === 'caregiver' ? '/caregiver' : '/healthcare')} data-testid="button-continue" className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] px-6 text-lg font-bold text-[hsl(var(--primary-foreground))] hover:opacity-90">{tr('continue')}<ChevronRight/></button><p className="mt-5 flex items-start gap-2 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]"><LockKeyhole size={15} className="mt-0.5 shrink-0"/>{tr('privacy')}</p>
-    </div></section>
-  </div></div>;
+  const [, setLocation] = useLocation();
+  const translate = (key: CopyKey) => tr(lang, key);
+  return (
+    <div className="shell-bg min-h-[100dvh] p-4 md:p-10">
+      <div className="mx-auto grid min-h-[calc(100dvh-2rem)] max-w-6xl overflow-hidden rounded-[2rem] card-surface md:grid-cols-[.9fr_1.1fr]">
+        <section className="relative flex flex-col justify-between overflow-hidden bg-[hsl(var(--sidebar))] p-7 text-[hsl(var(--sidebar-foreground))] md:p-12">
+          <div className="absolute -right-16 -top-10 h-64 w-64 rounded-full border-[34px] border-[hsl(var(--accent)/.4)]" />
+          <div className="relative"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26} /></div><span className="tracking-[.2em]">NER</span></div>
+            <div className="mt-24 max-w-sm"><p className="mb-4 text-sm uppercase tracking-[.2em] opacity-65">{translate('region')}</p><h1 className="serif text-5xl leading-[1.05] md:text-6xl">{translate('welcome')}</h1><p className="mt-6 text-lg leading-relaxed opacity-80">{translate('welcomeSub')}</p></div>
+          </div>
+          <div className="relative mt-12 flex items-end gap-3"><div className="h-20 w-20 rounded-t-full bg-[hsl(var(--secondary)/.7)]" /><div className="h-28 w-28 rounded-t-full bg-[hsl(var(--accent)/.75)]" /><div className="h-16 w-16 rounded-t-full bg-[hsl(var(--secondary)/.5)]" /></div>
+        </section>
+        <section className="flex flex-col justify-center p-6 md:p-12"><div className="mx-auto w-full max-w-xl">
+          <div className="mb-8"><div className="mb-3 flex items-center gap-2 text-[hsl(var(--primary))]"><Languages size={21} /><span className="font-bold">{translate('chooseLanguage')}</span></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{languageOptions.map((item) => <button key={item.id} onClick={() => setLang(item.id)} data-testid={`button-language-${item.id}`} className={`min-h-14 rounded-2xl border px-3 text-left transition-all ${lang === item.id ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)] ring-2 ring-[hsl(var(--primary)/.2)]' : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'}`}><span className="block text-sm font-bold">{item.native}</span><span className="text-xs text-[hsl(var(--muted-foreground))]">{item.label}</span></button>)}</div></div>
+          <div className="mb-8"><div className="mb-3 flex items-center gap-2 text-[hsl(var(--primary))]"><UserRound size={21} /><span className="font-bold">{translate('chooseRole')}</span></div><div className="space-y-3">{(['patient', 'caregiver', 'healthcare'] as Role[]).map((item) => { const Icon = item === 'patient' ? UserRound : item === 'caregiver' ? Heart : Stethoscope; return <button key={item} onClick={() => setRole(item)} data-testid={`button-role-${item}`} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${role === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)] ring-2 ring-[hsl(var(--primary)/.2)]' : 'border-[hsl(var(--border))]'}`}><Icon size={25} className="text-[hsl(var(--primary))]" /><span className="font-bold">{translate(item)}</span>{role === item && <Check className="ml-auto text-[hsl(var(--primary))]" />}</button>; })}</div></div>
+          <button onClick={() => setLocation(role === 'patient' ? '/patient' : role === 'caregiver' ? '/caregiver' : '/healthcare')} data-testid="button-continue" className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] px-6 text-lg font-bold text-[hsl(var(--primary-foreground))] hover:opacity-90">{translate('continue')}<ChevronRight /></button><p className="mt-5 flex items-start gap-2 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]"><LockKeyhole size={15} className="mt-0.5 shrink-0" />{translate('privacy')}</p>
+        </div></section>
+      </div>
+    </div>
+  );
 }
 
-function PageIntro({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) { return <div className="gentle-in mb-7 flex items-start gap-4"><div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><Icon size={27}/></div><div><h2 className="serif text-3xl font-semibold">{title}</h2><p className="mt-1 text-[hsl(var(--muted-foreground))]">{hint}</p></div></div>; }
+function PageIntro({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) { return <div className="gentle-in mb-7 flex items-start gap-4"><div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><Icon size={27} /></div><div><h2 className="serif text-3xl font-semibold">{title}</h2><p className="mt-1 text-[hsl(var(--muted-foreground))]">{hint}</p></div></div>; }
 function SectionCard({ children, className = '' }: { children: ReactNode; className?: string }) { return <section className={`card-surface rounded-3xl p-5 md:p-6 ${className}`}>{children}</section>; }
 function Badge({ children, tone = 'primary' }: { children: ReactNode; tone?: 'primary' | 'accent' | 'muted' }) { return <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${tone === 'accent' ? 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]' : tone === 'muted' ? 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]' : 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]'}`}>{children}</span>; }
 
 function PatientHome({ lang }: { lang: Lang }) {
-  const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; const [, setLocation] = useLocation();
-  const [med, setMed] = useState<'pending' | 'taken' | 'later'>(() => getStore('ner-med', 'pending'));
-  const mark = (v: 'taken' | 'later') => { setMed(v); setStore('ner-med', v); };
-  return <div className="gentle-in space-y-6"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 flex items-center gap-2 text-sm font-bold text-[hsl(var(--primary))]"><Sun size={17}/>{tr('today')} · Tuesday, 14 May</p><h2 className="serif text-4xl md:text-5xl">{tr('goodMorning')}, Amina</h2><p className="mt-2 text-lg text-[hsl(var(--muted-foreground))]">{tr('calmStart')}</p></div><Badge tone="muted"><Wifi size={13} className="mr-1"/>{tr('synced')}</Badge></div>
-    <div className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]"><SectionCard className="relative overflow-hidden bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><div className="absolute right-0 top-0 h-full w-2/5 soft-pattern opacity-30"/><div className="relative"><p className="text-sm opacity-75">{tr('nextMedicine')}</p><div className="mt-3 flex items-end justify-between gap-3"><div><h3 className="serif text-4xl">Vitamin D</h3><p className="mt-2 flex items-center gap-2 text-base opacity-80"><Clock3 size={18}/> {tr('dueAt')} 09:00 · {tr('morning')}</p></div><div className="rounded-2xl bg-white/15 p-4"><Bell size={29}/></div></div><div className="mt-6 flex flex-wrap gap-3">{med === 'pending' ? <><button onClick={() => mark('taken')} data-testid="button-medicine-taken" className="flex min-h-14 items-center gap-2 rounded-2xl bg-[hsl(var(--accent))] px-5 font-bold text-white"><Check size={21}/>{tr('takeNow')}</button><button onClick={() => mark('later')} data-testid="button-medicine-later" className="min-h-14 rounded-2xl bg-white/15 px-5 font-bold">{tr('later')}</button></> : <div className="flex items-center gap-2 rounded-2xl bg-white/15 px-5 py-4 font-bold"><Check size={21}/>{med === 'taken' ? tr('taken') : tr('later')}</div>}</div></div></SectionCard><SectionCard className="flex flex-col justify-between"><div><Badge>{tr('progress')}</Badge><p className="mt-4 text-4xl font-bold">4 <span className="text-base font-normal text-[hsl(var(--muted-foreground))]">{tr('sessions')}</span></p><p className="mt-1 text-[hsl(var(--muted-foreground))]">{tr('thisWeek')}</p></div><button onClick={() => setLocation('/progress')} data-testid="button-view-progress" className="mt-5 flex min-h-12 items-center justify-between rounded-xl bg-[hsl(var(--muted))] px-4 font-bold">{tr('progress')}<ChevronRight size={19}/></button></SectionCard></div>
-    <div className="grid gap-5 md:grid-cols-3"><QuickCard icon={Gamepad2} title={tr('games')} body={tr('gameHint')} href="/games"/><QuickCard icon={Music2} title={tr('music')} body={tr('musicHint')} href="/music"/><QuickCard icon={UsersRound} title={tr('memories')} body={tr('memoryHint')} href="/memories"/></div>
-    <div className="rounded-3xl border border-[hsl(var(--accent)/.3)] bg-[hsl(var(--accent)/.1)] p-5"><div className="flex items-start gap-3"><Lightbulb className="mt-1 text-[hsl(var(--accent))]" size={22}/><div><p className="font-bold">Today’s gentle idea</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Look out for one green thing near you. A leaf, a garden, or the hills after rain.</p></div></div></div>
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [, setLocation] = useLocation();
+  const [med, setMed] = useState<'pending' | 'taken' | 'later'>(() => readStore('ner-med', 'pending' as 'pending'));
+  const results = getGameResults();
+  const mark = (value: 'taken' | 'later') => { setMed(value); writeStore('ner-med', value); };
+  return <div className="gentle-in space-y-6">
+    <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 flex items-center gap-2 text-sm font-bold text-[hsl(var(--primary))]"><Sun size={17} />{translate('today')} · Tuesday</p><h2 className="serif text-4xl md:text-5xl">{translate('goodMorning')}, Amina</h2><p className="mt-2 text-lg text-[hsl(var(--muted-foreground))]">{translate('calmStart')}</p></div><Badge tone="muted"><Wifi size={13} className="mr-1" />{translate('savedOnDevice')}</Badge></div>
+    <div className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]"><SectionCard className="relative overflow-hidden bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><div className="absolute right-0 top-0 h-full w-2/5 soft-pattern opacity-30" /><div className="relative"><p className="text-sm opacity-75">{translate('nextMedicine')}</p><div className="mt-3 flex items-end justify-between gap-3"><div><h3 className="serif text-4xl">Vitamin D</h3><p className="mt-2 flex items-center gap-2 text-base opacity-80"><Clock3 size={18} />{translate('dueAt')} 09:00 · {translate('morning')}</p></div><div className="rounded-2xl bg-white/15 p-4"><Bell size={29} /></div></div><div className="mt-6 flex flex-wrap gap-3">{med === 'pending' ? <><button onClick={() => mark('taken')} className="flex min-h-14 items-center gap-2 rounded-2xl bg-[hsl(var(--accent))] px-5 font-bold"><Check size={21} />{translate('takeNow')}</button><button onClick={() => mark('later')} className="min-h-14 rounded-2xl bg-white/15 px-5 font-bold">{translate('later')}</button></> : <div className="flex items-center gap-2 rounded-2xl bg-white/15 px-5 py-4 font-bold"><Check size={21} />{med === 'taken' ? translate('taken') : translate('later')}</div>}</div></div></SectionCard><SectionCard className="flex flex-col justify-between"><div><Badge>{translate('progress')}</Badge><p className="mt-4 text-4xl font-bold">{results.length} <span className="text-base font-normal text-[hsl(var(--muted-foreground))]">{translate('sessions')}</span></p><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('thisWeek')}</p></div><button onClick={() => setLocation('/progress')} className="mt-5 flex min-h-12 items-center justify-between rounded-xl bg-[hsl(var(--muted))] px-4 font-bold">{translate('progress')}<ChevronRight size={19} /></button></SectionCard></div>
+    <div className="grid gap-5 md:grid-cols-3"><QuickCard icon={Gamepad2} title={translate('personalizedGames')} body={translate('personalizedJigsaw')} href="/games" /><QuickCard icon={Sparkles} title={translate('culturalGames')} body={translate('culturalJigsaw')} href="/games" /><QuickCard icon={Activity} title={translate('progress')} body={translate('recentPerformance')} href="/progress" /></div>
+    <div className="rounded-3xl border border-[hsl(var(--accent)/.3)] bg-[hsl(var(--accent)/.1)] p-5"><div className="flex items-start gap-3"><Lightbulb className="mt-1 text-[hsl(var(--accent))]" size={22} /><div><p className="font-bold">{translate('familiarSoundscape')}</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{translate('privacyShort')}</p></div></div></div>
   </div>;
 }
-function QuickCard({ icon: Icon, title, body, href }: { icon: LucideIcon; title: string; body: string; href: string }) { return <Link href={href} data-testid={`link-quick-${href.slice(1)}`} className="card-surface group rounded-3xl p-5 hover:-translate-y-0.5"><Icon className="mb-5 text-[hsl(var(--primary))]" size={27}/><h3 className="text-xl font-bold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{body}</p><span className="mt-5 flex items-center gap-1 text-sm font-bold text-[hsl(var(--primary))]"><span>Open</span><ChevronRight size={16} className="transition-transform group-hover:translate-x-1"/></span></Link>; }
+
+function QuickCard({ icon: Icon, title, body, href }: { icon: LucideIcon; title: string; body: string; href: string }) { return <Link href={href} className="card-surface group rounded-3xl p-5 hover:-translate-y-0.5"><Icon className="mb-5 text-[hsl(var(--primary))]" size={27} /><h3 className="text-xl font-bold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{body}</p><span className="mt-5 flex items-center gap-1 text-sm font-bold text-[hsl(var(--primary))]"><span>{'Open'}</span><ChevronRight size={16} className="transition-transform group-hover:translate-x-1" /></span></Link>; }
+
+type GameType = GameResult['gameType'];
 
 function Games({ lang }: { lang: Lang }) {
-  const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; const [difficulty, setDifficulty] = useState('steady'); const [playing, setPlaying] = useState(false); const [score, setScore] = useState<number | null>(null);
-  const finish = () => { const next = Math.floor(6 + Math.random() * 4); setScore(next); setPlaying(false); setStore('ner-last-game', { score: next, date: Date.now(), difficulty }); };
-  return <div className="gentle-in"><PageIntro icon={Gamepad2} title={tr('games')} hint={tr('gameHint')}/>{score !== null && <div className="pop mb-5 rounded-3xl border border-[hsl(var(--primary)/.3)] bg-[hsl(var(--primary)/.1)] p-5"><div className="flex items-center gap-3"><Trophy className="text-[hsl(var(--accent))]"/><div><p className="font-bold">{tr('gameComplete')}</p><p className="text-sm text-[hsl(var(--muted-foreground))]">{tr('score')}: {score} · {tr('gameCompleteSub')}</p></div></div><button onClick={() => setScore(null)} data-testid="button-play-again" className="mt-4 rounded-xl bg-[hsl(var(--primary))] px-4 py-3 font-bold text-[hsl(var(--primary-foreground))]">{tr('playAgain')}</button></div>}
-    <div className="grid gap-5 lg:grid-cols-[1fr_1.25fr]"><SectionCard><div className="mb-5 flex items-center gap-3"><div className="rounded-2xl bg-[hsl(var(--secondary))] p-3"><Brain size={28}/></div><div><h3 className="text-xl font-bold">Remember the place</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">A familiar picture, one gentle choice.</p></div></div><div className="mb-5 rounded-2xl bg-[hsl(var(--primary)/.08)] p-5"><div className="relative h-36 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(168_35%_47%)] via-[hsl(43_56%_77%)] to-[hsl(17_71%_57%)]"><div className="absolute bottom-0 left-0 h-1/2 w-full bg-[hsl(171_38%_26%/.65)]"/><div className="absolute bottom-10 left-[17%] h-20 w-12 rounded-t-full bg-[hsl(32_50%_73%)]"/><div className="absolute bottom-10 left-[47%] h-24 w-14 rounded-t-full bg-[hsl(32_50%_83%)]"/><div className="absolute right-[15%] top-7 h-7 w-7 rounded-full bg-[hsl(42_76%_83%)]"/></div><p className="mt-3 text-sm font-bold">A quiet view from Loktak Lake</p></div><div className="mb-3 flex items-center justify-between"><span className="font-bold">Choose your pace</span><Badge tone="muted">{tr(difficulty as Key)}</Badge></div><div className="grid grid-cols-3 gap-2">{['easy', 'steady', 'challenge'].map(item => <button key={item} onClick={() => setDifficulty(item)} data-testid={`button-difficulty-${item}`} className={`min-h-12 rounded-xl border text-sm font-bold ${difficulty === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'border-[hsl(var(--border))]'}`}>{tr(item as Key)}</button>)}</div><button onClick={() => { setPlaying(true); window.setTimeout(finish, 1400); }} disabled={playing} data-testid="button-begin-game" className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))] disabled:opacity-70">{playing ? <><Sparkles className="animate-pulse"/>{tr('round')}…</> : <><Play size={20}/>{tr('begin')}</>}</button></SectionCard><div className="space-y-5"><CultureTile title="Kamakhya Temple" type="red"/><CultureTile title="Tawang Monastery" type="gold"/><CultureTile title="Kaziranga grasslands" type="green"/></div></div>
-  </div>;
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [selected, setSelected] = useState<GameType>('personalized-jigsaw');
+  const cards: { type: GameType; icon: LucideIcon; title: CopyKey; body: CopyKey }[] = [
+    { type: 'personalized-jigsaw', icon: Brain, title: 'personalizedJigsaw', body: 'rememberPlace' },
+    { type: 'family-match', icon: UsersRound, title: 'familyMatch', body: 'familyMatchHint' },
+    { type: 'cultural-jigsaw', icon: Sparkles, title: 'culturalJigsaw', body: 'culturalGames' },
+    { type: 'cultural-match', icon: Trophy, title: 'culturalMatch', body: 'culturalMatchHint' },
+  ];
+  return <div className="gentle-in"><PageIntro icon={Gamepad2} title={translate('games')} hint={translate('gameHint')} /><div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{cards.map(({ type, icon: Icon, title, body }) => <button key={type} onClick={() => setSelected(type)} className={`rounded-3xl border p-4 text-left transition-all ${selected === type ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)] ring-2 ring-[hsl(var(--primary)/.15)]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'}`}><Icon className="mb-4 text-[hsl(var(--primary))]" size={25} /><p className="font-bold">{translate(title)}</p><p className="mt-1 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">{translate(body)}</p></button>)}</div>{selected === 'personalized-jigsaw' && <JigsawGame lang={lang} gameType="personalized-jigsaw" />}{selected === 'cultural-jigsaw' && <JigsawGame lang={lang} gameType="cultural-jigsaw" />}{selected === 'family-match' && <MatchGame lang={lang} gameType="family-match" />}{selected === 'cultural-match' && <MatchGame lang={lang} gameType="cultural-match" />}</div>;
 }
-function CultureTile({ title, type }: { title: string; type: 'red' | 'gold' | 'green' }) { return <div className={`relative min-h-28 overflow-hidden rounded-3xl p-5 text-[hsl(var(--foreground))] ${type === 'red' ? 'bg-[hsl(17_57%_78%)]' : type === 'gold' ? 'bg-[hsl(39_67%_77%)]' : 'bg-[hsl(150_26%_75%)]'}`}><div className="absolute -right-3 -top-5 h-24 w-24 rounded-full border-[14px] border-white/30"/><p className="relative text-lg font-bold">{title}</p><p className="relative mt-1 text-sm opacity-75">A place we remember together</p></div>; }
+
+function GameResultPanel({ lang, result, onAgain }: { lang: Lang; result: GameResult; onAgain: () => void }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const adaptation = adaptDifficulty(result, getGameResults());
+  const reason = adaptation.reason === 'increase' ? 'increaseDifficulty' : adaptation.reason === 'reduce' ? 'reduceDifficulty' : 'stayDifficulty';
+  return <div className="pop space-y-5 rounded-3xl border border-[hsl(var(--primary)/.3)] bg-[hsl(var(--primary)/.08)] p-5 md:p-7"><div className="flex items-start gap-3"><Trophy className="mt-1 text-[hsl(var(--accent))]" size={27} /><div><h3 className="serif text-3xl">{translate('gameComplete')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('gameCompleteSub')}</p></div></div><div className="grid grid-cols-2 gap-3 md:grid-cols-5">{[[translate('score'), result.score], [translate('accuracy'), `${Math.round(result.accuracy * 100)}%`], [translate('attempts'), result.attempts], [translate('hintsUsed'), result.hintsUsed], [translate('completionTime'), `${result.completionTime}s`]].map(([label, value]) => <div key={String(label)} className="rounded-2xl bg-[hsl(var(--card))] p-3"><p className="text-xs text-[hsl(var(--muted-foreground))]">{label}</p><p className="mt-1 text-xl font-bold">{value}</p></div>)}</div><div className="flex items-start gap-2 rounded-2xl bg-[hsl(var(--accent)/.12)] p-4 text-sm"><Sparkles className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" size={18} /><span><strong>{translate('adaptiveHelp')}:</strong> {translate(reason)}</span></div><p className="text-sm text-[hsl(var(--muted-foreground))]">{translate('resultSaved')}</p><button onClick={onAgain} className="min-h-14 rounded-2xl bg-[hsl(var(--primary))] px-5 font-bold text-[hsl(var(--primary-foreground))]">{translate('playAgain')}</button></div>;
+}
+
+function DifficultyPicker({ lang, difficulty, setDifficulty }: { lang: Lang; difficulty: Difficulty; setDifficulty: (value: Difficulty) => void }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  return <div><p className="mb-3 font-bold">{translate('chooseDifficulty')}</p><div className="grid grid-cols-3 gap-2">{(['easy', 'medium', 'hard'] as Difficulty[]).map((value) => <button key={value} onClick={() => setDifficulty(value)} className={`min-h-12 rounded-xl border text-sm font-bold ${difficulty === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'border-[hsl(var(--border))]'}`}>{translate(value)}<span className="mt-0.5 block text-xs font-normal text-[hsl(var(--muted-foreground))]">{value === 'easy' ? '4' : value === 'medium' ? '6' : '9'} {translate('pieces')}</span></button>)}</div></div>;
+}
+
+function JigsawGame({ lang, gameType }: { lang: Lang; gameType: 'personalized-jigsaw' | 'cultural-jigsaw' }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const cultural = gameType === 'cultural-jigsaw';
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [started, setStarted] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [pieces, setPieces] = useState<number[]>([]);
+  const [placed, setPlaced] = useState<(number | null)[]>([]);
+  const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [hints, setHints] = useState(0);
+  const [startedAt, setStartedAt] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [result, setResult] = useState<GameResult | null>(null);
+  const [hintIndex, setHintIndex] = useState<number | null>(null);
+  const pieceCount = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 6 : 9;
+  const culturalItem = culturalItems[0];
+
+  const createPuzzle = () => {
+    const nextPieces = Array.from({ length: pieceCount }, (_, index) => index).sort(() => Math.random() - 0.5);
+    setPieces(nextPieces); setPlaced(Array.from({ length: pieceCount }, () => null)); setSelectedPiece(null); setAttempts(0); setHints(0); setHintIndex(null); setElapsed(0); setStartedAt(Date.now()); setStarted(true); setPaused(false); setResult(null);
+  };
+  const finish = (nextPlaced: (number | null)[], nextAttempts: number) => {
+    const accuracy = Math.min(1, nextPlaced.filter((value, index) => value === index).length / Math.max(nextAttempts, pieceCount));
+    const gameResult: GameResult = { id: `${gameType}-${Date.now()}`, gameType, accuracy, completionTime: Math.max(1, Math.floor((Date.now() - startedAt) / 1000)), attempts: nextAttempts, hintsUsed: hints, difficulty, score: scoreGame(accuracy, difficulty, nextAttempts, hints), createdAt: Date.now() };
+    saveGameResult(gameResult); setResult(gameResult); setStarted(false);
+  };
+  useEffect(() => {
+    if (!started || paused) return;
+    const interval = window.setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => window.clearInterval(interval);
+  }, [started, paused, startedAt]);
+  useEffect(() => {
+    const onCommand = (event: Event) => {
+      const command = (event as CustomEvent<string>).detail;
+      if (command.includes('start') && !started) createPuzzle();
+      else if (command.includes('pause')) setPaused(true);
+      else if ((command.includes('continue') || command.includes('start')) && started) setPaused(false);
+      else if (command.includes('restart')) createPuzzle();
+      else if (command.includes('hint')) giveHint();
+      else if (command.includes('easier')) setDifficulty(difficulty === 'hard' ? 'medium' : 'easy');
+      else if (command.includes('harder')) setDifficulty(difficulty === 'easy' ? 'medium' : 'hard');
+    };
+    window.addEventListener('ner-voice-command', onCommand);
+    return () => window.removeEventListener('ner-voice-command', onCommand);
+  });
+  const movePiece = (piece: number, slot: number) => {
+    if (!started || paused || placed[slot] !== null) return;
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+    if (piece === slot) {
+      const next = [...placed]; next[slot] = piece; setPlaced(next); setSelectedPiece(null); setHintIndex(null);
+      if (next.every((value, index) => value === index)) finish(next, nextAttempts);
+    } else {
+      setSelectedPiece(piece);
+    }
+  };
+  const giveHint = () => {
+    if (!started || paused) return;
+    const openSlot = placed.findIndex((value) => value === null);
+    if (openSlot >= 0) { setHintIndex(openSlot); setHints((value) => value + 1); }
+  };
+  const slotGrid = pieceCount === 4 ? 'grid-cols-2' : pieceCount === 6 ? 'grid-cols-3' : 'grid-cols-3';
+  if (result) return <GameResultPanel lang={lang} result={result} onAgain={createPuzzle} />;
+  return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? culturalItem.titleKey : translate('rememberPlace')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('gameInstruction')}</p></div><div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]"><Clock3 size={17} />{elapsed}s</div></div>{!started ? <div className="space-y-5"><div className={`cultural-scene ${colors[culturalItem.color]} relative flex min-h-40 items-center justify-center overflow-hidden rounded-2xl`}><div className="absolute bottom-0 h-1/2 w-full bg-[hsl(171_38%_26%/.5)]" /><div className="relative text-center"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/60 text-4xl font-bold text-[hsl(var(--primary))]">{culturalItem.symbol}</div><p className="mt-3 font-bold">{cultural ? culturalItem.detail : translate('rememberPlace')}</p></div></div><DifficultyPicker lang={lang} difficulty={difficulty} setDifficulty={setDifficulty} /><button onClick={createPuzzle} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<p className="rounded-2xl bg-[hsl(var(--muted))] p-4 text-center text-sm">{translate('dragPieces')}</p><div className={`mx-auto grid max-w-md ${slotGrid} gap-2 rounded-2xl bg-[hsl(var(--muted))] p-3`}>{placed.map((piece, index) => <button key={index} onClick={() => selectedPiece !== null && movePiece(selectedPiece, index)} onDragOver={(event) => event.preventDefault()} onDrop={() => selectedPiece !== null && movePiece(selectedPiece, index)} className={`flex aspect-square min-h-20 items-center justify-center rounded-xl border-2 border-dashed text-3xl font-bold transition-all ${piece === null ? 'border-[hsl(var(--primary)/.35)] bg-[hsl(var(--card)/.6)]' : 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.18)]'} ${hintIndex === index ? 'ring-4 ring-[hsl(var(--accent)/.55)]' : ''}`}>{piece === null ? '?' : <span className="cultural-tile h-full w-full rounded-lg" data-piece={piece}>{piece + 1}</span>}</button>)}</div><div className="flex flex-wrap justify-center gap-2">{pieces.filter((piece) => !placed.includes(piece)).map((piece) => <button key={piece} draggable onDragStart={() => setSelectedPiece(piece)} onClick={() => setSelectedPiece(piece)} className={`flex h-20 w-20 touch-none items-center justify-center rounded-2xl border-2 bg-[hsl(var(--card))] text-xl font-bold shadow-sm ${selectedPiece === piece ? 'border-[hsl(var(--accent))] ring-4 ring-[hsl(var(--accent)/.25)]' : 'border-[hsl(var(--border))]'}`}>{piece + 1}</button>)}</div><div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={createPuzzle} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={giveHint} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button><Badge tone="muted">{translate('attempts')}: {attempts} · {translate('hintsUsed')}: {hints}</Badge></div></div>}</SectionCard>;
+}
+
+type MatchMode = 'photoToPerson' | 'photoToName' | 'photoToRelationship' | 'landmark' | 'animal' | 'object' | 'food';
+
+function MatchGame({ lang, gameType }: { lang: Lang; gameType: 'family-match' | 'cultural-match' }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const cultural = gameType === 'cultural-match';
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [mode, setMode] = useState<MatchMode>(cultural ? 'landmark' : 'photoToPerson');
+  const [round, setRound] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [hints, setHints] = useState(0);
+  const [startedAt, setStartedAt] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [feedback, setFeedback] = useState<'correct' | 'tryAgain' | null>(null);
+  const [hinted, setHinted] = useState(false);
+  const [result, setResult] = useState<GameResult | null>(null);
+  const profiles = getMemoryProfiles();
+  const roundTarget = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 5 : 7;
+  const currentProfile = profiles[round % Math.max(profiles.length, 1)] ?? demoMemoryProfiles[0];
+  const currentCulture = culturalItems[round % culturalItems.length];
+  const modes: MatchMode[] = cultural ? ['landmark', 'animal', 'object', 'food'] : ['photoToPerson', 'photoToName', 'photoToRelationship'];
+  const options = cultural
+    ? culturalItems.filter((item) => item.category === mode || item.id === currentCulture.id).slice(0, 4).concat(culturalItems.filter((item) => item.id !== currentCulture.id && item.category !== mode).slice(0, 2)).slice(0, 4)
+    : profiles.filter((profile) => profile.id === currentProfile.id || profile.id !== currentProfile.id).slice(0, 4);
+  const startGame = () => { setStarted(true); setPaused(false); setRound(0); setCorrectCount(0); setAttempts(0); setHints(0); setFeedback(null); setHinted(false); setStartedAt(Date.now()); setResult(null); };
+  const finish = (nextAttempts: number, nextCorrect: number) => {
+    const accuracy = nextCorrect / Math.max(nextAttempts, 1);
+    const gameResult: GameResult = { id: `${gameType}-${Date.now()}`, gameType, accuracy, completionTime: Math.max(1, Math.floor((Date.now() - startedAt) / 1000)), attempts: nextAttempts, hintsUsed: hints, difficulty, score: scoreGame(accuracy, difficulty, nextAttempts, hints), createdAt: Date.now() };
+    saveGameResult(gameResult); setResult(gameResult); setStarted(false);
+  };
+  useEffect(() => {
+    const onCommand = (event: Event) => {
+      const command = (event as CustomEvent<string>).detail;
+      if (command.includes('start') && !started) startGame();
+      else if (command.includes('pause')) setPaused(true);
+      else if ((command.includes('continue') || command.includes('start')) && started) setPaused(false);
+      else if (command.includes('restart')) startGame();
+      else if (command.includes('hint')) { setHints((value) => value + 1); setHinted(true); }
+      else if (command.includes('easier')) setDifficulty(difficulty === 'hard' ? 'medium' : 'easy');
+      else if (command.includes('harder')) setDifficulty(difficulty === 'easy' ? 'medium' : 'hard');
+    };
+    window.addEventListener('ner-voice-command', onCommand);
+    return () => window.removeEventListener('ner-voice-command', onCommand);
+  });
+  const answerCorrect = (id: string) => cultural ? id === currentCulture.id : id === currentProfile.id;
+  const choose = (id: string) => {
+    if (!started || paused || feedback === 'correct') return;
+    const isCorrect = answerCorrect(id);
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+    setFeedback(isCorrect ? 'correct' : 'tryAgain');
+    if (isCorrect) {
+      const nextCorrect = correctCount + 1;
+      setCorrectCount(nextCorrect);
+      window.setTimeout(() => {
+        if (round + 1 >= roundTarget) finish(nextAttempts, nextCorrect);
+        else { setRound((value) => value + 1); setFeedback(null); setHinted(false); }
+      }, 650);
+    } else {
+      window.setTimeout(() => setFeedback(null), 800);
+    }
+  };
+  const modeLabel = mode === 'photoToPerson' ? translate('photoToPerson') : mode === 'photoToName' ? translate('photoToName') : mode === 'photoToRelationship' ? translate('photoToRelationship') : translate(mode);
+  if (result) return <GameResultPanel lang={lang} result={result} onAgain={startGame} />;
+  return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? translate('culturalMatch') : translate('familyMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('chooseAnswer')}</p></div>{started && <Badge tone="muted">{translate('round')} {round + 1} / {roundTarget}</Badge>}</div>{!started ? <div className="space-y-5"><DifficultyPicker lang={lang} difficulty={difficulty} setDifficulty={setDifficulty} /><div><p className="mb-3 font-bold">{cultural ? translate('culturalContent') : translate('chooseGame')}</p><div className="grid gap-2 sm:grid-cols-3">{modes.map((value) => <button key={value} onClick={() => setMode(value)} className={`min-h-14 rounded-xl border px-3 text-left text-sm font-bold ${mode === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'border-[hsl(var(--border))]'}`}>{value === 'landmark' ? translate('landmark') : value === 'animal' ? translate('animal') : value === 'object' ? translate('object') : value === 'food' ? translate('food') : translate(value)}</button>)}</div></div><button onClick={startGame} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<div className="flex flex-col items-center rounded-3xl bg-[hsl(var(--muted))] p-6 text-center"><div className={`flex h-32 w-32 items-center justify-center rounded-full ${cultural ? colors[currentCulture.color] : 'bg-[hsl(var(--secondary))]'} text-4xl font-bold text-[hsl(var(--primary))]`}>{cultural ? currentCulture.symbol : currentProfile.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div><p className="mt-4 text-lg font-bold">{translate('chooseAnswer')}</p>{hinted && <p className="mt-2 text-sm text-[hsl(var(--accent))]">{cultural ? currentCulture.titleKey : currentProfile.name}</p>}</div><div className="grid gap-3 sm:grid-cols-2">{options.map((option) => { const id = cultural ? (option as CulturalItem).id : (option as MemoryProfile).id; const label = cultural ? (option as CulturalItem).titleKey : mode === 'photoToRelationship' ? (option as MemoryProfile).relationship : (option as MemoryProfile).name; return <button key={id} onClick={() => choose(id)} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-[hsl(var(--card))] p-4 text-left font-bold transition-all hover:border-[hsl(var(--primary))]"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-sm">{cultural ? (option as CulturalItem).symbol : (option as MemoryProfile).name.charAt(0)}</span>{label}</button>; })}</div>{feedback && <div className={`rounded-2xl p-4 text-center font-bold ${feedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(feedback)}</div>}<div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={startGame} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={() => { setHints((value) => value + 1); setHinted(true); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button></div></div>}</SectionCard>;
+}
 
 function Medicine({ lang }: { lang: Lang }) {
-  const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; const [items, setItems] = useState(() => getStore('ner-meds', [{ id: 1, name: 'Vitamin D', time: '09:00', period: 'morning', status: 'pending' }, { id: 2, name: 'Warm water', time: '13:00', period: 'afternoon', status: 'pending' }, { id: 3, name: 'Calcium', time: '20:00', period: 'evening', status: 'pending' }]) as { id: number; name: string; time: string; period: string; status: string }[]);
-  const change = (id: number, status: string) => { const next = items.map(item => item.id === id ? { ...item, status } : item); setItems(next); setStore('ner-meds', next); };
-  return <div className="gentle-in"><PageIntro icon={Bell} title={tr('medicineTitle')} hint={tr('medicineHint')}/><div className="space-y-4">{items.map(item => <SectionCard key={item.id} className="flex flex-wrap items-center gap-4"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--secondary))]"><Clock3 size={25}/></div><div className="min-w-[150px] flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-xl font-bold">{item.name}</h3>{item.status === 'taken' && <Badge>{tr('taken')}</Badge>}{item.status === 'later' && <Badge tone="accent">{tr('later')}</Badge>}</div><p className="mt-1 text-[hsl(var(--muted-foreground))]">{item.time} · {tr(item.period as Key)}</p></div>{item.status === 'pending' ? <div className="flex gap-2"><button onClick={() => change(item.id, 'taken')} data-testid={`button-med-taken-${item.id}`} className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]">{tr('taken')}</button><button onClick={() => change(item.id, 'later')} data-testid={`button-med-later-${item.id}`} className="min-h-12 rounded-xl border border-[hsl(var(--border))] px-4 font-bold">{tr('later')}</button></div> : <button onClick={() => change(item.id, 'pending')} data-testid={`button-med-undo-${item.id}`} className="min-h-12 rounded-xl border px-4 font-bold">{tr('back')}</button>}</SectionCard>)}</div><p className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))]">Reminders support your routine. Please follow advice from your clinician.</p></div>;
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [items, setItems] = useState(() => readStore('ner-meds', [{ id: 1, name: 'Vitamin D', time: '09:00', period: 'morning', status: 'pending' }, { id: 2, name: 'Warm water', time: '13:00', period: 'afternoon', status: 'pending' }, { id: 3, name: 'Calcium', time: '20:00', period: 'evening', status: 'pending' }]) as { id: number; name: string; time: string; period: string; status: string }[]);
+  const change = (id: number, status: string) => { const next = items.map((item) => item.id === id ? { ...item, status } : item); setItems(next); writeStore('ner-meds', next); };
+  return <div className="gentle-in"><PageIntro icon={Bell} title={translate('medicine')} hint={translate('privacyShort')} /><div className="space-y-4">{items.map((item) => <SectionCard key={item.id} className="flex flex-wrap items-center gap-4"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--secondary))]"><Clock3 size={25} /></div><div className="min-w-[150px] flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-xl font-bold">{item.name}</h3>{item.status !== 'pending' && <Badge tone={item.status === 'later' ? 'accent' : 'primary'}>{item.status === 'taken' ? translate('taken') : translate('later')}</Badge>}</div><p className="mt-1 text-[hsl(var(--muted-foreground))]">{item.time} · {translate(item.period as CopyKey)}</p></div>{item.status === 'pending' ? <div className="flex gap-2"><button onClick={() => change(item.id, 'taken')} className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]">{translate('taken')}</button><button onClick={() => change(item.id, 'later')} className="min-h-12 rounded-xl border px-4 font-bold">{translate('later')}</button></div> : <button onClick={() => change(item.id, 'pending')} className="min-h-12 rounded-xl border px-4 font-bold">{translate('restart')}</button>}</SectionCard>)}</div></div>;
 }
 
 function Music({ lang }: { lang: Lang }) {
-  const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; const [playing, setPlaying] = useState(false); const [track, setTrack] = useState(0); const tracks = ['Bihu morning rhythm', 'Bamboo flute at dawn', 'Monsoon on the hills']; return <div className="gentle-in"><PageIntro icon={Music2} title={tr('musicTitle')} hint={tr('musicHint')}/><div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><SectionCard className="overflow-hidden bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"><div className="relative flex min-h-72 flex-col justify-between overflow-hidden rounded-2xl bg-[hsl(var(--primary)/.35)] p-6"><div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[25px] border-[hsl(var(--accent)/.6)]"/><div className="relative flex justify-between"><Badge tone="accent">{tr('nowPlaying')}</Badge><Volume2 size={21}/></div><div className="relative"><p className="text-sm opacity-70">Northeast soundscape</p><h3 className="serif mt-1 text-3xl">{tracks[track]}</h3><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/20"><div className="h-full w-2/5 bg-[hsl(var(--accent))]"/></div><div className="mt-5 flex items-center justify-center gap-5"><button onClick={() => setTrack(track === 0 ? tracks.length - 1 : track - 1)} data-testid="button-track-previous" className="rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20}/></button><button onClick={() => setPlaying(!playing)} data-testid="button-music-toggle" className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white">{playing ? <Pause/> : <Play className="ml-1"/>}</button><button onClick={() => setTrack((track + 1) % tracks.length)} data-testid="button-track-next" className="rotate-180 rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20}/></button></div></div></div></SectionCard><SectionCard><h3 className="mb-4 text-xl font-bold">Choose a familiar feeling</h3><div className="space-y-3">{tracks.map((name, index) => <button key={name} onClick={() => { setTrack(index); setPlaying(true); }} data-testid={`button-track-${index}`} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${track === index ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : 'border-[hsl(var(--border))]'}`}><div className="rounded-xl bg-[hsl(var(--secondary))] p-3"><Music2 size={20}/></div><div className="flex-1"><p className="font-bold">{name}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">3 minute listening</p></div>{track === index && playing ? <Pause size={18}/> : <Play size={18}/>}</button>)}</div></SectionCard></div></div>;
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [playing, setPlaying] = useState(false);
+  const [track, setTrack] = useState(0);
+  const [repeat, setRepeat] = useState(false);
+  const tracks = ['Bihu morning rhythm', 'Bamboo flute at dawn', 'Monsoon on the hills'];
+  return <div className="gentle-in"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} /><div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><SectionCard className="overflow-hidden bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"><div className="relative flex min-h-72 flex-col justify-between overflow-hidden rounded-2xl bg-[hsl(var(--primary)/.35)] p-6"><div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[25px] border-[hsl(var(--accent)/.6)]" /><div className="relative flex justify-between"><Badge tone="accent">{translate('music')}</Badge><Volume2 size={21} /></div><div className="relative"><p className="text-sm opacity-70">{translate('region')}</p><h3 className="serif mt-1 text-3xl">{tracks[track]}</h3><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/20"><div className="h-full w-2/5 bg-[hsl(var(--accent))]" /></div><div className="mt-5 flex items-center justify-center gap-5"><button onClick={() => setTrack(track === 0 ? tracks.length - 1 : track - 1)} aria-label={translate('previous')} className="rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={() => setPlaying(!playing)} aria-label={playing ? translate('pause') : translate('play')} className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white">{playing ? <Pause /> : <Play className="ml-1" />}</button><button onClick={() => setTrack((track + 1) % tracks.length)} aria-label={translate('next')} className="rotate-180 rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button></div></div></div></SectionCard><SectionCard><h3 className="mb-4 text-xl font-bold">{translate('chooseGame')}</h3><div className="space-y-3">{tracks.map((name, index) => <button key={name} onClick={() => { setTrack(index); setPlaying(true); }} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${track === index ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : 'border-[hsl(var(--border))]'}`}><div className="rounded-xl bg-[hsl(var(--secondary))] p-3"><Music2 size={20} /></div><div className="flex-1"><p className="font-bold">{name}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">3 minutes</p></div>{track === index && playing ? <Pause size={18} /> : <Play size={18} />}</button>)}</div><button onClick={() => setRepeat(!repeat)} className={`mt-5 flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold ${repeat ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}><RotateCcw size={17} />{translate('repeat')}</button></SectionCard></div></div>;
 }
 
 function Memories({ lang }: { lang: Lang }) {
-  const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; const [memories, setMemories] = useState(() => getStore('ner-memories', [{ id: 1, name: 'Maya, daughter', note: 'She loves singing by the window.' }, { id: 2, name: 'Raju, grandson', note: 'Ask him about his school garden.' }]) as { id: number; name: string; note: string }[]); const [open, setOpen] = useState(false); const [name, setName] = useState(''); const [note, setNote] = useState('');
-  const save = () => { if (!name.trim() || memories.length >= 25) return; const next = [...memories, { id: Date.now(), name: name.trim(), note: note.trim() }]; setMemories(next); setStore('ner-memories', next); setName(''); setNote(''); setOpen(false); };
-  const remove = (id: number) => { const next = memories.filter(m => m.id !== id); setMemories(next); setStore('ner-memories', next); };
-  return <div className="gentle-in"><PageIntro icon={UsersRound} title={tr('memoryTitle')} hint={tr('memoryHint')}/><div className="mb-5 flex items-center justify-between"><Badge tone="muted">{memories.length} / 25</Badge><button onClick={() => setOpen(!open)} data-testid="button-add-memory" className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]"><Plus size={19}/>{tr('addMemory')}</button></div>{open && <SectionCard className="pop mb-5"><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-bold">{tr('memoryName')}<input value={name} onChange={e => setName(e.target.value)} data-testid="input-memory-name" className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" placeholder="e.g. Pema, neighbour"/></label><label className="text-sm font-bold">{tr('memoryNote')}<input value={note} onChange={e => setNote(e.target.value)} data-testid="input-memory-note" className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" placeholder="A familiar story"/></label></div><div className="mt-4 flex justify-end gap-2"><button onClick={() => setOpen(false)} data-testid="button-cancel-memory" className="min-h-12 rounded-xl px-4 font-bold">{tr('back')}</button><button onClick={save} data-testid="button-save-memory" className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-5 font-bold text-[hsl(var(--primary-foreground))]">{tr('save')}</button></div></SectionCard>}<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{memories.length ? memories.map(memory => <SectionCard key={memory.id} className="relative"><div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-2xl font-bold text-[hsl(var(--primary))]">{memory.name.charAt(0)}</div><h3 className="text-lg font-bold">{memory.name}</h3><p className="mt-2 min-h-12 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{memory.note || 'A familiar face, close to the heart.'}</p><button onClick={() => remove(memory.id)} data-testid={`button-remove-memory-${memory.id}`} className="mt-4 flex items-center gap-2 text-sm font-bold text-[hsl(var(--destructive))]"><Trash2 size={16}/>{tr('remove')}</button></SectionCard>) : <SectionCard className="col-span-full py-14 text-center"><Heart className="mx-auto mb-4 text-[hsl(var(--accent))]" size={36}/><p className="font-bold">{tr('noMemories')}</p></SectionCard>}</div></div>;
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [memories, setMemories] = useState<MemoryProfile[]>(() => getMemoryProfiles());
+  const [editing, setEditing] = useState<MemoryProfile | null>(null);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<MemoryProfile>({ id: '', name: '', relationship: 'Daughter', voiceNote: '', description: '', photoDataUrl: '' });
+  const openForm = (profile?: MemoryProfile) => { setForm(profile ?? { id: '', name: '', relationship: 'Daughter', voiceNote: '', description: '', photoDataUrl: '' }); setEditing(profile ?? null); setOpen(true); };
+  const save = () => {
+    if (!form.name.trim() || (!editing && memories.length >= 25)) return;
+    const next = editing ? memories.map((item) => item.id === form.id ? { ...form, name: form.name.trim() } : item) : [...memories, { ...form, id: `memory-${Date.now()}`, name: form.name.trim() }];
+    setMemories(next); writeStore('ner-memory-profiles', next); setOpen(false); setEditing(null);
+  };
+  const remove = (id: string) => { const next = memories.filter((item) => item.id !== id); setMemories(next); writeStore('ner-memory-profiles', next); };
+  const updatePhoto = (file?: File) => { if (!file) return; const reader = new FileReader(); reader.onload = () => setForm((value) => ({ ...value, photoDataUrl: String(reader.result ?? '') })); reader.readAsDataURL(file); };
+  return <div className="gentle-in"><PageIntro icon={UsersRound} title={translate('personalMemories')} hint={translate('demoProfiles')} /><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><Badge tone="muted">{translate('personalMemories')}: {memories.length}/25</Badge><button onClick={() => openForm()} disabled={memories.length >= 25} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))] disabled:cursor-not-allowed disabled:opacity-50"><Plus size={19} />{translate('addMemory')}</button></div>{memories.length >= 25 && <p className="mb-5 rounded-2xl bg-[hsl(var(--accent)/.12)] p-4 text-sm text-[hsl(var(--accent))]">{translate('memoryLimitReached')}</p>}{open && <SectionCard className="pop mb-5"><div className="mb-4 flex items-center justify-between"><h3 className="serif text-2xl">{editing ? translate('editMemory') : translate('addMemory')}</h3><button onClick={() => setOpen(false)} aria-label={translate('close')}><X /></button></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-bold">{translate('nameField')}<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label><label className="text-sm font-bold">{translate('relationshipField')}<select value={form.relationship} onChange={(event) => setForm({ ...form, relationship: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-[hsl(var(--card))] px-4"><option>Daughter</option><option>Son</option><option>Grandchild</option><option>Neighbour</option><option>Friend</option><option>Caregiver</option></select></label><label className="text-sm font-bold">{translate('voiceNoteReference')}<input value={form.voiceNote} onChange={(event) => setForm({ ...form, voiceNote: event.target.value })} placeholder={translate('noVoiceNote')} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label><label className="text-sm font-bold">{translate('descriptionField')}<input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label><label className="text-sm font-bold sm:col-span-2">{translate('photoField')}<input type="file" accept="image/*" onChange={(event) => updatePhoto(event.target.files?.[0])} className="mt-2 block min-h-14 w-full rounded-xl border bg-transparent p-3" />{form.photoDataUrl && <img src={form.photoDataUrl} alt="" className="mt-3 h-20 w-20 rounded-2xl object-cover" />}</label></div><div className="mt-5 flex justify-end gap-2"><button onClick={() => setOpen(false)} className="min-h-12 rounded-xl px-4 font-bold">{translate('cancel')}</button><button onClick={save} className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-5 font-bold text-[hsl(var(--primary-foreground))]">{translate('save')}</button></div></SectionCard>}<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{memories.length ? memories.map((memory) => <SectionCard key={memory.id} className="relative"><div className="mb-5 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[hsl(var(--secondary))] text-2xl font-bold text-[hsl(var(--primary))]">{memory.photoDataUrl ? <img src={memory.photoDataUrl} alt="" className="h-full w-full object-cover" /> : memory.name.charAt(0)}</div><div className="flex items-start justify-between gap-2"><div><h3 className="text-lg font-bold">{memory.name}</h3><Badge tone="muted">{memory.relationship}</Badge></div><button onClick={() => openForm(memory)} aria-label={translate('editMemory')} className="rounded-xl p-2 text-[hsl(var(--primary))]"><Pencil size={18} /></button></div><p className="mt-3 min-h-12 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{memory.description || translate('familiarFace')}</p><p className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">{memory.voiceNote || translate('noVoiceNote')}</p><button onClick={() => remove(memory.id)} className="mt-4 flex items-center gap-2 text-sm font-bold text-[hsl(var(--destructive))]"><Trash2 size={16} />{translate('remove')}</button></SectionCard>) : <SectionCard className="col-span-full py-14 text-center"><Heart className="mx-auto mb-4 text-[hsl(var(--accent))]" size={36} /><p className="font-bold">{translate('memoriesEmpty')}</p></SectionCard>}</div></div>;
 }
 
-function Progress({ lang }: { lang: Lang }) { const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; return <div className="gentle-in"><PageIntro icon={Activity} title={tr('progressTitle')} hint={tr('progressHint')}/><div className="grid gap-5 md:grid-cols-3"><StatCard label={tr('sessions')} value="12" detail={tr('thisWeek')}/><StatCard label={tr('minutes')} value="48" detail="Across games and music"/><StatCard label="Medicines" value="8 / 9" detail="Marked on time"/></div><SectionCard className="mt-5"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-xl font-bold">{tr('weekSummary')}</h3><Badge tone="muted">{tr('privacyShort')}</Badge></div><div className="mt-7 flex h-44 items-end justify-between gap-3 border-b border-l p-3">{[38, 54, 42, 76, 60, 88, 66].map((height, index) => <div key={index} className="flex flex-1 flex-col items-center gap-2"><div className="w-full max-w-12 rounded-t-xl bg-[hsl(var(--primary))]" style={{ height: `${height}%` }}/><span className="text-xs text-[hsl(var(--muted-foreground))]">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}</span></div>)}</div><p className="mt-5 flex gap-2 text-sm text-[hsl(var(--muted-foreground))]"><CircleHelp size={17}/>This view reflects app activity only. It is not a cognitive or medical assessment.</p></SectionCard></div>; }
+function Progress({ lang }: { lang: Lang }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const results = getGameResults();
+  const average = results.length ? Math.round(results.reduce((sum, result) => sum + result.accuracy, 0) / results.length * 100) : 0;
+  return <div className="gentle-in"><PageIntro icon={Activity} title={translate('progress')} hint={translate('activityOnly')} /><div className="grid gap-5 md:grid-cols-3"><StatCard label={translate('sessions')} value={String(results.length)} detail={translate('thisWeek')} /><StatCard label={translate('recentAccuracy')} value={`${average}%`} detail={translate('privacyShort')} /><StatCard label={translate('memoryCount')} value={String(getMemoryProfiles().length)} detail={translate('personalMemories')} /></div><SectionCard className="mt-5"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-xl font-bold">{translate('weekSummary')}</h3><Badge tone="muted">{translate('privacyShort')}</Badge></div>{results.length ? <div className="mt-7 flex h-44 items-end justify-between gap-3 border-b border-l p-3">{results.slice(-7).map((result, index) => <div key={result.id} className="flex flex-1 flex-col items-center gap-2"><div className="w-full max-w-12 rounded-t-xl bg-[hsl(var(--primary))]" style={{ height: `${Math.max(10, result.accuracy * 100)}%` }} /><span className="text-xs text-[hsl(var(--muted-foreground))]">{index + 1}</span></div>)}</div> : <p className="py-12 text-center text-[hsl(var(--muted-foreground))]">{translate('noResults')}</p>}<p className="mt-5 flex gap-2 text-sm text-[hsl(var(--muted-foreground))]"><CircleHelp size={17} />{translate('activityOnly')}</p></SectionCard></div>;
+}
 function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) { return <SectionCard><p className="text-sm text-[hsl(var(--muted-foreground))]">{label}</p><p className="mt-2 text-4xl font-bold text-[hsl(var(--primary))]">{value}</p><p className="mt-2 text-sm">{detail}</p></SectionCard>; }
 
-function Caregiver({ lang }: { lang: Lang }) { const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; return <div className="gentle-in"><PageIntro icon={Heart} title={tr('caregiverTitle')} hint={tr('caregiverHint')}/><div className="mb-5 flex items-center justify-between rounded-3xl bg-[hsl(var(--primary))] p-5 text-[hsl(var(--primary-foreground))]"><div><p className="text-sm opacity-75">{tr('patientName')}</p><p className="serif text-3xl">Amina Das</p></div><div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-xl font-bold">AD</div></div><div className="grid gap-5 md:grid-cols-2"><SectionCard><div className="flex items-center justify-between"><h3 className="text-xl font-bold">{tr('today')}</h3><Badge>{tr('synced')}</Badge></div><div className="mt-5 space-y-4"><CareRow icon={Bell} label={tr('medicine')} value="2 of 3 marked"/><CareRow icon={Gamepad2} label={tr('games')} value="1 round completed"/><CareRow icon={Music2} label={tr('music')} value="12 minutes"/></div></SectionCard><SectionCard><h3 className="text-xl font-bold">{tr('supportiveNote')}</h3><p className="mt-4 leading-relaxed text-[hsl(var(--muted-foreground))]">Amina enjoyed a familiar soundscape and visited her memory shelf. A gentle hello can be a lovely next step.</p><Link href="/patient" data-testid="link-view-patient" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]">{tr('viewPatient')}<ChevronRight size={18}/></Link></SectionCard></div></div>; }
-function CareRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) { return <div className="flex items-center gap-3 rounded-2xl bg-[hsl(var(--muted)/.55)] p-3"><Icon className="text-[hsl(var(--primary))]" size={21}/><span className="flex-1 font-bold">{label}</span><span className="text-sm text-[hsl(var(--muted-foreground))]">{value}</span></div>; }
-function Healthcare({ lang }: { lang: Lang }) { const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; return <div className="gentle-in"><PageIntro icon={Stethoscope} title={tr('healthcareTitle')} hint={tr('healthcareHint')}/><div className="grid gap-5 lg:grid-cols-[1.15fr_.85fr]"><SectionCard><div className="flex items-center justify-between"><div><p className="text-sm text-[hsl(var(--muted-foreground))]">Member overview</p><h3 className="serif text-3xl">Amina Das</h3></div><Badge>{tr('synced')}</Badge></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><StatCard label={tr('engagement')} value="Good" detail="4 active days"/><StatCard label={tr('medicine')} value="89%" detail="Marked routine"/><StatCard label="Memory shelf" value="2" detail="Family profiles"/></div></SectionCard><SectionCard><div className="flex items-center gap-3"><ShieldCheck className="text-[hsl(var(--primary))]" size={25}/><h3 className="text-xl font-bold">Shared with care</h3></div><p className="mt-4 leading-relaxed text-[hsl(var(--muted-foreground))]">This screen shows participation patterns only. It does not diagnose, predict, or replace clinical judgement.</p><div className="mt-5 rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4 text-sm"><p className="font-bold">Last note</p><p className="mt-1">“Enjoyed music from the hills.”</p></div></SectionCard></div></div>; }
+function Caregiver({ lang }: { lang: Lang }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const results = getGameResults();
+  const recent = results.slice(-5).reverse();
+  const accuracy = results.length ? Math.round(results.slice(-5).reduce((sum, item) => sum + item.accuracy, 0) / Math.min(results.length, 5) * 100) : 0;
+  return <div className="gentle-in"><PageIntro icon={Heart} title={translate('caregiverView')} hint={translate('caregiverHint')} /><div className="mb-5 flex items-center justify-between rounded-3xl bg-[hsl(var(--primary))] p-5 text-[hsl(var(--primary-foreground))]"><div><p className="text-sm opacity-75">{translate('patientName')}</p><p className="serif text-3xl">Amina Das</p></div><div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-xl font-bold">AD</div></div><div className="grid gap-5 md:grid-cols-2"><SectionCard><h3 className="text-xl font-bold">{translate('activitiesToday')}</h3><div className="mt-5 space-y-4"><CareRow icon={Gamepad2} label={translate('gamesCompletedToday')} value={String(results.length)} /><CareRow icon={Trophy} label={translate('latestScores')} value={recent[0] ? String(recent[0].score) : '—'} /><CareRow icon={Activity} label={translate('recentAccuracy')} value={`${accuracy}%`} /><CareRow icon={UsersRound} label={translate('memoryCount')} value={`${getMemoryProfiles().length}/25`} /></div></SectionCard><SectionCard><h3 className="text-xl font-bold">{translate('recentPerformance')}</h3>{recent.length ? <div className="mt-4 space-y-3">{recent.slice(0, 3).map((item) => <div key={item.id} className="flex items-center justify-between rounded-2xl bg-[hsl(var(--muted)/.55)] p-3"><span className="text-sm font-bold">{item.gameType.replaceAll('-', ' ')}</span><span className="text-sm text-[hsl(var(--muted-foreground))]">{Math.round(item.accuracy * 100)}% · {item.difficulty}</span></div>)}</div> : <p className="mt-4 text-[hsl(var(--muted-foreground))]">{translate('noResults')}</p>}<Link href="/patient" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]">{translate('viewPatient')}<ChevronRight size={18} /></Link></SectionCard></div></div>;
+}
+function CareRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) { return <div className="flex items-center gap-3 rounded-2xl bg-[hsl(var(--muted)/.55)] p-3"><Icon className="text-[hsl(var(--primary))]" size={21} /><span className="flex-1 font-bold">{label}</span><span className="text-sm text-[hsl(var(--muted-foreground))]">{value}</span></div>; }
 
-function Settings({ lang, role, setLang, setRole }: { lang: Lang; role: Role; setLang: (l: Lang) => void; setRole: (r: Role) => void }) { const tr = (key: Key) => translations[lang]?.[key] ?? en[key]; const [large, setLarge] = useState(() => getStore('ner-large-text', false)); const toggleLarge = () => { setLarge(!large); setStore('ner-large-text', !large); document.documentElement.style.fontSize = !large ? '18px' : '16px'; }; const reset = () => { ['ner-med', 'ner-meds', 'ner-memories', 'ner-last-game'].forEach(key => localStorage.removeItem(key)); alert(tr('resetConfirm')); }; return <div className="gentle-in max-w-3xl"><PageIntro icon={SettingsIcon} title={tr('settingsTitle')} hint={tr('privacy')}/><div className="space-y-4"><SectionCard><div className="flex items-center gap-3"><Languages className="text-[hsl(var(--primary))]"/><div className="flex-1"><h3 className="font-bold">{tr('language')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">Choose the words that feel most at home</p></div><select value={lang} onChange={e => setLang(e.target.value as Lang)} data-testid="select-language" className="min-h-12 rounded-xl border bg-transparent px-3">{languages.map(l => <option key={l.id} value={l.id}>{l.native}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><UserRound className="text-[hsl(var(--primary))]"/><div className="flex-1"><h3 className="font-bold">{tr('role')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{tr(role)}</p></div><select value={role} onChange={e => setRole(e.target.value as Role)} data-testid="select-role" className="min-h-12 rounded-xl border bg-transparent px-3">{(['patient', 'caregiver', 'healthcare'] as Role[]).map(r => <option key={r} value={r}>{tr(r)}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><BookOpen className="text-[hsl(var(--primary))]"/><div className="flex-1"><h3 className="font-bold">{tr('textSize')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{large ? tr('large') : tr('normal')}</p></div><button onClick={toggleLarge} data-testid="button-toggle-text-size" className="min-h-12 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{large ? tr('normal') : tr('large')}</button></div></SectionCard><SectionCard><div className="flex items-center gap-3"><LockKeyhole className="text-[hsl(var(--primary))]"/><div><h3 className="font-bold">{tr('privacyTitle')}</h3><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{tr('privacy')}</p></div></div></SectionCard><button onClick={reset} data-testid="button-reset-data" className="min-h-14 w-full rounded-2xl border border-[hsl(var(--destructive)/.35)] text-[hsl(var(--destructive))] font-bold">{tr('reset')}</button></div></div>; }
+function Healthcare({ lang }: { lang: Lang }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const results = getGameResults();
+  const current = results.at(-1);
+  return <div className="gentle-in"><PageIntro icon={Stethoscope} title={translate('healthcareView')} hint={translate('healthcareHint')} /><div className="grid gap-5 lg:grid-cols-[1.15fr_.85fr]"><SectionCard><div className="flex items-center justify-between"><div><p className="text-sm text-[hsl(var(--muted-foreground))]">{translate('memberOverview')}</p><h3 className="serif text-3xl">Amina Das</h3></div><Badge>{translate('savedOnDevice')}</Badge></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><StatCard label={translate('engagement')} value={results.length ? 'Good' : '—'} detail={results.length ? `${Math.min(results.length, 7)} ${translate('activeDays')}` : translate('noResults')} /><StatCard label={translate('currentDifficulty')} value={current?.difficulty ?? '—'} detail={translate('recentPerformance')} /><StatCard label={translate('memoryCount')} value={String(getMemoryProfiles().length)} detail={translate('personalMemories')} /></div></SectionCard><SectionCard><div className="flex items-center gap-3"><ShieldCheck className="text-[hsl(var(--primary))]" size={25} /><h3 className="text-xl font-bold">{translate('sharedWithCare')}</h3></div><p className="mt-4 leading-relaxed text-[hsl(var(--muted-foreground))]">{translate('activityOnly')}</p><div className="mt-5 rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4 text-sm"><p className="font-bold">{translate('lastNote')}</p><p className="mt-1">{translate('familiarSoundscape')}</p></div></SectionCard></div></div>;
+}
 
-function Router() { const { lang, role, setLang, setRole } = useAppPrefs(); return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole}/></Route><Route><AppFrame lang={lang} role={role} setLang={setLang} setRole={setRole}><Switch><Route path="/patient"><PatientHome lang={lang}/></Route><Route path="/games"><Games lang={lang}/></Route><Route path="/medicine"><Medicine lang={lang}/></Route><Route path="/music"><Music lang={lang}/></Route><Route path="/memories"><Memories lang={lang}/></Route><Route path="/progress"><Progress lang={lang}/></Route><Route path="/caregiver"><Caregiver lang={lang}/></Route><Route path="/healthcare"><Healthcare lang={lang}/></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole}/></Route><Route><Link href="/patient">Go home</Link></Route></Switch></AppFrame></Route></Switch>; }
+function Settings({ lang, role, setLang, setRole }: { lang: Lang; role: Role; setLang: (l: Lang) => void; setRole: (r: Role) => void }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [large, setLarge] = useState(() => readStore('ner-large-text', false));
+  const toggleLarge = () => { setLarge(!large); writeStore('ner-large-text', !large); document.documentElement.style.fontSize = !large ? '18px' : '16px'; };
+  const reset = () => { ['ner-med', 'ner-meds', 'ner-memory-profiles', 'ner-game-results', 'ner-large-text'].forEach((key) => localStorage.removeItem(key)); window.location.reload(); };
+  return <div className="gentle-in max-w-3xl"><PageIntro icon={SettingsIcon} title={translate('settings')} hint={translate('privacy')} /><div className="space-y-4"><SectionCard><div className="flex items-center gap-3"><Languages className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('language')}</h3></div><select value={lang} onChange={(event) => setLang(event.target.value as Lang)} className="min-h-12 rounded-xl border bg-transparent px-3">{languageOptions.map((item) => <option key={item.id} value={item.id}>{item.native}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><UserRound className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('role')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{translate(role)}</p></div><select value={role} onChange={(event) => setRole(event.target.value as Role)} className="min-h-12 rounded-xl border bg-transparent px-3">{(['patient', 'caregiver', 'healthcare'] as Role[]).map((value) => <option key={value} value={value}>{translate(value)}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><BookOpen className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('textSize')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{large ? translate('large') : translate('normal')}</p></div><button onClick={toggleLarge} className="min-h-12 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{large ? translate('normal') : translate('large')}</button></div></SectionCard><SectionCard><div className="flex items-center gap-3"><LockKeyhole className="text-[hsl(var(--primary))]" /><div><h3 className="font-bold">{translate('privacyTitle')}</h3><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{translate('privacy')}</p></div></div></SectionCard><button onClick={reset} className="min-h-14 w-full rounded-2xl border border-[hsl(var(--destructive)/.35)] font-bold text-[hsl(var(--destructive))]">{translate('reset')}</button></div></div>;
+}
+
+function Router() {
+  const { lang, role, setLang, setRole } = useAppPrefs();
+  return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><AppFrame lang={lang} role={role}><Switch><Route path="/patient"><PatientHome lang={lang} /></Route><Route path="/games"><Games lang={lang} /></Route><Route path="/medicine"><Medicine lang={lang} /></Route><Route path="/music"><Music lang={lang} /></Route><Route path="/memories"><Memories lang={lang} /></Route><Route path="/progress"><Progress lang={lang} /></Route><Route path="/caregiver"><Caregiver lang={lang} /></Route><Route path="/healthcare"><Healthcare lang={lang} /></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><Link href="/patient">{tr(lang, 'goHome')}</Link></Route></Switch></AppFrame></Route></Switch>;
+}
+
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
-function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedErrorBoundary><Router/></RoutedErrorBoundary></WouterRouter><Toaster/></TooltipProvider></QueryClientProvider>; }
+function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedErrorBoundary><Router /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
 export default App;
