@@ -183,6 +183,76 @@ export const copy = {
     musicMinutes: 'minutes of music',
     lastNote: 'Last note',
     familiarSoundscape: 'Enjoyed music from the hills.',
+    stop: 'Stop',
+    volumeUp: 'Volume up',
+    volumeDown: 'Volume down',
+    favorites: 'My Favorites',
+    playlist: 'Playlist',
+    calm: 'Calm',
+    memoriesCategory: 'Memories',
+    regional: 'Regional / NER',
+    instrumental: 'Instrumental',
+    nature: 'Nature sounds',
+    demoAudio: 'Team-created demo audio',
+    audioDemoNote: 'These short sounds are generated locally for this prototype.',
+    favorite: 'Add to favorites',
+    unfavorite: 'Remove from favorites',
+    listenMatch: 'Listen & Match',
+    listenMatchHint: 'Listen to a short sound and choose the matching category.',
+    playClip: 'Play sound',
+    matchCategory: 'Which category matches this sound?',
+    musicResultSaved: 'Your Listen & Match result is saved on this device.',
+    notificationTitle: 'Medicine reminder',
+    notificationPermission: 'Allow browser reminders',
+    notificationDenied: 'Browser reminders are unavailable. The in-app reminder will remain visible.',
+    notificationUnsupported: 'This browser does not support notifications. The in-app reminder will remain visible.',
+    notificationFallback: 'Reminder available in the app',
+    notificationsEnabled: 'Browser reminders are enabled.',
+    medicineSchedule: 'Medicine schedule',
+    medicineName: 'Medicine name',
+    medicinePhoto: 'Medicine photo',
+    instruction: 'Caregiver instruction',
+    time: 'Time',
+    frequency: 'Frequency',
+    daily: 'Every day',
+    weekdays: 'Weekdays',
+    weekly: 'Weekly',
+    startDate: 'Start date',
+    endDate: 'End date',
+    voiceInstruction: 'Optional voice instruction',
+    active: 'Active',
+    inactive: 'Inactive',
+    addMedicine: 'Add medicine',
+    editMedicine: 'Edit medicine',
+    deleteMedicine: 'Delete medicine',
+    noMedicines: 'No active medicines are scheduled for today.',
+    medicineHistory: 'Medicine history',
+    scheduled: 'Scheduled',
+    missed: 'Missed',
+    pending: 'Pending',
+    todayMedicines: 'Today’s medicines',
+    takenCount: 'Taken',
+    pendingCount: 'Pending',
+    missedCount: 'Missed',
+    recentAdherence: 'Recent adherence',
+    repeatedMisses: 'Repeatedly missed reminder',
+    safetyNotice: 'Only information entered by a caregiver or authorized professional is shown. This app does not identify medicines or change dosage.',
+    caregiverEnteredOnly: 'Enter the name and instruction exactly as provided by the caregiver.',
+    photoOptional: 'Optional · not used to identify medicine',
+    playVoiceCue: 'Play memory cue',
+    voicePreview: 'Browser voice preview',
+    musicActivities: 'Music activities',
+    listenMatchScores: 'Recent Listen & Match scores',
+    memoryProfilesActive: 'Active memory profiles',
+    gamesRecent: 'Recent game activity',
+    medicineDashboard: 'Medicine',
+    musicDashboard: 'Music',
+    memoriesDashboard: 'Memories',
+    gamesDashboard: 'Games',
+    markTaken: 'Taken',
+    delayReminder: 'Remind me later',
+    requestNotifications: 'Turn on reminders',
+    saveSchedule: 'Save schedule',
   },
   ta: {
     appTitle: 'NER நினைவுதவி', region: 'வடகிழக்கு பகுதி', welcome: 'ஒவ்வொரு நாளும் ஒரு அமைதியான தருணம்.',
@@ -449,10 +519,146 @@ export const copy = {
   },
 } as const;
 
-// The longer form keeps a single translation contract while allowing the first
-// prototype to use English for secondary helper copy in languages that need
-// human review. Game names, instructions, controls, results, and navigation
-// are localized above for every supported language.
-export type CopyKey = keyof typeof copy.en;
-export const t = (lang: Lang, key: CopyKey): string =>
-  (copy[lang] as Partial<Record<CopyKey, string>>)[key] ?? copy.en[key];
+export type Stage3Key =
+  | 'stop' | 'volumeUp' | 'volumeDown' | 'favorites' | 'playlist' | 'calm' | 'memoriesCategory'
+  | 'regional' | 'instrumental' | 'nature' | 'demoAudio' | 'audioDemoNote' | 'favorite' | 'unfavorite'
+  | 'listenMatch' | 'listenMatchHint' | 'playClip' | 'matchCategory' | 'musicResultSaved'
+  | 'notificationTitle' | 'notificationPermission' | 'notificationDenied' | 'notificationUnsupported'
+  | 'notificationFallback' | 'notificationsEnabled' | 'medicineSchedule' | 'medicineName' | 'medicinePhoto'
+  | 'instruction' | 'time' | 'frequency' | 'daily' | 'weekdays' | 'weekly' | 'startDate' | 'endDate'
+  | 'voiceInstruction' | 'active' | 'inactive' | 'addMedicine' | 'editMedicine' | 'deleteMedicine'
+  | 'noMedicines' | 'medicineHistory' | 'scheduled' | 'missed' | 'pending' | 'todayMedicines'
+  | 'takenCount' | 'pendingCount' | 'missedCount' | 'recentAdherence' | 'repeatedMisses' | 'safetyNotice'
+  | 'caregiverEnteredOnly' | 'photoOptional' | 'playVoiceCue' | 'voicePreview' | 'musicActivities'
+  | 'listenMatchScores' | 'memoryProfilesActive' | 'gamesRecent' | 'medicineDashboard' | 'musicDashboard'
+  | 'memoriesDashboard' | 'gamesDashboard' | 'markTaken' | 'delayReminder' | 'requestNotifications'
+  | 'saveSchedule';
+
+const stage3Copy: Record<Lang, Partial<Record<Stage3Key, string>>> = {
+  en: {},
+  ta: {
+    stop: 'நிறுத்து', volumeUp: 'ஒலியை அதிகரிக்கவும்', volumeDown: 'ஒலியை குறைக்கவும்', favorites: 'எனது பிடித்தவை',
+    playlist: 'பட்டியல்', calm: 'அமைதி', memoriesCategory: 'நினைவுகள்', regional: 'பிராந்திய / வடகிழக்கு',
+    instrumental: 'கருவி இசை', nature: 'இயற்கை ஒலிகள்', demoAudio: 'குழுவால் உருவாக்கப்பட்ட ஒலி',
+    listenMatch: 'கேட்டு பொருத்துக', listenMatchHint: 'சிறு ஒலியைக் கேட்டு சரியான வகையைத் தேர்ந்தெடுக்கவும்.',
+    playClip: 'ஒலியை இயக்கு', matchCategory: 'இந்த ஒலிக்கு எந்த வகை பொருந்தும்?', notificationTitle: 'மருந்து நினைவூட்டல்',
+    notificationPermission: 'உலாவி நினைவூட்டல்களை அனுமதிக்கவும்', medicineSchedule: 'மருந்து அட்டவணை',
+    medicineName: 'மருந்தின் பெயர்', medicinePhoto: 'மருந்து புகைப்படம்', instruction: 'பராமரிப்பாளர் அறிவுரை',
+    time: 'நேரம்', frequency: 'அடிக்கடி', daily: 'தினமும்', weekdays: 'வார நாட்கள்', weekly: 'வாரந்தோறும்',
+    startDate: 'தொடக்க தேதி', endDate: 'முடிவு தேதி', voiceInstruction: 'விருப்ப குரல் அறிவுரை',
+    active: 'செயலில்', inactive: 'செயலில் இல்லை', addMedicine: 'மருந்தைச் சேர்க்கவும்', editMedicine: 'மருந்தைத் திருத்தவும்',
+    deleteMedicine: 'மருந்தை நீக்கவும்', noMedicines: 'இன்றைக்கு செயலில் உள்ள மருந்துகள் இல்லை.',
+    medicineHistory: 'மருந்து வரலாறு', scheduled: 'திட்டமிடப்பட்டது', missed: 'தவறியது', pending: 'நிலுவையில்',
+    todayMedicines: 'இன்றைய மருந்துகள்', recentAdherence: 'சமீபத்திய பின்பற்றல்', safetyNotice: 'பராமரிப்பாளர் உள்ளிட்ட தகவல்கள் மட்டுமே காட்டப்படும். இந்த செயலி மருந்தை அடையாளம் காணாது அல்லது அளவை மாற்றாது.',
+    playVoiceCue: 'நினைவு குரலை இயக்கு', musicActivities: 'இசை செயல்பாடுகள்', listenMatchScores: 'சமீபத்திய கேட்டு பொருத்து மதிப்பெண்கள்',
+    memoryProfilesActive: 'செயலில் உள்ள நினைவு சுயவிவரங்கள்', gamesRecent: 'சமீபத்திய விளையாட்டு செயல்பாடு',
+    medicineDashboard: 'மருந்து', musicDashboard: 'இசை', memoriesDashboard: 'நினைவுகள்', gamesDashboard: 'விளையாட்டுகள்',
+    markTaken: 'எடுத்துவிட்டேன்', delayReminder: 'பிறகு நினைவூட்டு', requestNotifications: 'நினைவூட்டல்களை இயக்கு', saveSchedule: 'அட்டவணையைச் சேமிக்கவும்',
+  },
+  hi: {
+    stop: 'रोकें', volumeUp: 'आवाज़ बढ़ाएं', volumeDown: 'आवाज़ कम करें', favorites: 'मेरे पसंदीदा', playlist: 'प्लेलिस्ट',
+    calm: 'शांत', memoriesCategory: 'यादें', regional: 'क्षेत्रीय / उत्तर पूर्व', instrumental: 'वाद्य संगीत',
+    nature: 'प्रकृति की आवाज़ें', demoAudio: 'टीम द्वारा बनाया गया डेमो ऑडियो', listenMatch: 'सुनें और मिलाएं',
+    listenMatchHint: 'छोटी ध्वनि सुनकर सही श्रेणी चुनें।', playClip: 'ध्वनि चलाएं', matchCategory: 'इस ध्वनि की श्रेणी चुनें',
+    notificationTitle: 'दवा की याद', notificationPermission: 'ब्राउज़र याद दिलाने की अनुमति दें', medicineSchedule: 'दवा की समय-सारणी',
+    medicineName: 'दवा का नाम', medicinePhoto: 'दवा की फोटो', instruction: 'देखभालकर्ता का निर्देश', time: 'समय',
+    frequency: 'आवृत्ति', daily: 'हर दिन', weekdays: 'कार्यदिवस', weekly: 'हर सप्ताह', startDate: 'आरंभ तिथि',
+    endDate: 'अंतिम तिथि', voiceInstruction: 'वैकल्पिक आवाज़ निर्देश', active: 'सक्रिय', inactive: 'निष्क्रिय',
+    addMedicine: 'दवा जोड़ें', editMedicine: 'दवा बदलें', deleteMedicine: 'दवा हटाएं', noMedicines: 'आज कोई सक्रिय दवा नहीं है।',
+    medicineHistory: 'दवा इतिहास', scheduled: 'निर्धारित', missed: 'छूट गई', pending: 'बाकी', todayMedicines: 'आज की दवाएं',
+    recentAdherence: 'हाल का पालन', safetyNotice: 'केवल देखभालकर्ता या अधिकृत व्यक्ति की दी हुई जानकारी दिखाई जाती है। यह ऐप दवा की पहचान या खुराक में बदलाव नहीं करता।',
+    playVoiceCue: 'याद की आवाज़ चलाएं', musicActivities: 'संगीत गतिविधियां', listenMatchScores: 'सुनें और मिलाएं स्कोर',
+    memoryProfilesActive: 'सक्रिय स्मृति प्रोफाइल', gamesRecent: 'हाल की खेल गतिविधि', medicineDashboard: 'दवा',
+    musicDashboard: 'संगीत', memoriesDashboard: 'यादें', gamesDashboard: 'खेल', markTaken: 'ले ली',
+    delayReminder: 'बाद में याद दिलाएं', requestNotifications: 'याद दिलाने की सुविधा चालू करें', saveSchedule: 'समय-सारणी सहेजें',
+  },
+  as: {
+    stop: 'ৰখাওক', volumeUp: 'শব্দ বঢ়াওক', volumeDown: 'শব্দ কমাওক', favorites: 'মোৰ পছন্দ', playlist: 'প্লেলিষ্ট',
+    calm: 'শান্ত', memoriesCategory: 'স্মৃতি', regional: 'আঞ্চলিক / উত্তৰ পূৰ্বাঞ্চল', instrumental: 'বাদ্যযন্ত্ৰ সংগীত',
+    nature: 'প্ৰকৃতিৰ শব্দ', listenMatch: 'শুনক আৰু মিলাওক', listenMatchHint: 'এটা সৰু শব্দ শুনি শ্ৰেণী বাছক।',
+    playClip: 'শব্দ বজাওক', matchCategory: 'এই শব্দটোৰ শ্ৰেণী বাছক', notificationTitle: 'ঔষধৰ সোঁৱৰণী',
+    notificationPermission: 'ব্ৰাউজাৰ সোঁৱৰণী অনুমতি দিয়ক', medicineSchedule: 'ঔষধৰ সময়সূচী', medicineName: 'ঔষধৰ নাম',
+    medicinePhoto: 'ঔষধৰ ফটো', instruction: 'যত্ন লোৱা ব্যক্তিৰ নিৰ্দেশ', time: 'সময়', frequency: 'সঘনতা',
+    daily: 'প্ৰতিদিনে', weekdays: 'কৰ্মদিন', weekly: 'সপ্তাহত এবাৰ', startDate: 'আৰম্ভণিৰ তাৰিখ', endDate: 'শেষৰ তাৰিখ',
+    voiceInstruction: 'ঐচ্ছিক কণ্ঠ নিৰ্দেশ', active: 'সক্ৰিয়', inactive: 'নিষ্ক্ৰিয়', addMedicine: 'ঔষধ যোগ কৰক',
+    editMedicine: 'ঔষধ সলনি কৰক', deleteMedicine: 'ঔষধ আঁতৰাওক', noMedicines: 'আজি কোনো সক্ৰিয় ঔষধ নাই।',
+    medicineHistory: 'ঔষধৰ ইতিহাস', scheduled: 'সময়সূচী কৰা', missed: 'বাদ পৰিল', pending: 'বাকী', todayMedicines: 'আজিৰ ঔষধ',
+    recentAdherence: 'শেহতীয়া অনুসৰণ', safetyNotice: 'যত্ন লোৱা ব্যক্তি বা অনুমোদিত কৰ্মীয়ে দিয়া তথ্যহে দেখুওৱা হয়। এই এপে ঔষধ চিনাক্ত বা মাত্ৰা সলনি নকৰে।',
+    playVoiceCue: 'স্মৃতিৰ কণ্ঠ বজাওক', musicActivities: 'সংগীত কাৰ্যকলাপ', listenMatchScores: 'শুনা আৰু মিলোৱা স্কোৰ',
+    memoryProfilesActive: 'সক্ৰিয় স্মৃতি প্ৰফাইল', gamesRecent: 'শেহতীয়া খেলৰ কাৰ্যকলাপ', medicineDashboard: 'ঔষধ',
+    musicDashboard: 'সংগীত', memoriesDashboard: 'স্মৃতি', gamesDashboard: 'খেল', markTaken: 'লোৱা হ’ল',
+    delayReminder: 'পিছত সোঁৱৰাওক', requestNotifications: 'সোঁৱৰণী চালু কৰক', saveSchedule: 'সময়সূচী সংৰক্ষণ কৰক',
+  },
+  bn: {
+    stop: 'থামান', volumeUp: 'শব্দ বাড়ান', volumeDown: 'শব্দ কমান', favorites: 'আমার পছন্দ', playlist: 'প্লেলিস্ট',
+    calm: 'শান্ত', memoriesCategory: 'স্মৃতি', regional: 'আঞ্চলিক / উত্তর পূর্ব', instrumental: 'যন্ত্রসঙ্গীত',
+    nature: 'প্রকৃতির শব্দ', listenMatch: 'শুনুন ও মেলান', listenMatchHint: 'ছোট শব্দ শুনে সঠিক বিভাগ বেছে নিন।',
+    playClip: 'শব্দ চালান', matchCategory: 'এই শব্দের বিভাগ বেছে নিন', notificationTitle: 'ওষুধের অনুস্মারক',
+    notificationPermission: 'ব্রাউজার অনুস্মারকের অনুমতি দিন', medicineSchedule: 'ওষুধের সময়সূচি', medicineName: 'ওষুধের নাম',
+    medicinePhoto: 'ওষুধের ছবি', instruction: 'পরিচর্যাকারীর নির্দেশ', time: 'সময়', frequency: 'ঘনত্ব', daily: 'প্রতিদিন',
+    weekdays: 'কর্মদিবস', weekly: 'সাপ্তাহিক', startDate: 'শুরুর তারিখ', endDate: 'শেষের তারিখ', voiceInstruction: 'ঐচ্ছিক কণ্ঠ নির্দেশ',
+    active: 'সক্রিয়', inactive: 'নিষ্ক্রিয়', addMedicine: 'ওষুধ যোগ করুন', editMedicine: 'ওষুধ বদলান', deleteMedicine: 'ওষুধ সরান',
+    noMedicines: 'আজ কোনো সক্রিয় ওষুধ নির্ধারিত নেই।', medicineHistory: 'ওষুধের ইতিহাস', scheduled: 'নির্ধারিত',
+    missed: 'বাদ গেছে', pending: 'বাকি', todayMedicines: 'আজকের ওষুধ', recentAdherence: 'সাম্প্রতিক অনুসরণ',
+    safetyNotice: 'শুধু পরিচর্যাকারী বা অনুমোদিত ব্যক্তির দেওয়া তথ্য দেখানো হয়। এই অ্যাপ ওষুধ শনাক্ত বা মাত্রা পরিবর্তন করে না।',
+    playVoiceCue: 'স্মৃতি কণ্ঠ চালান', musicActivities: 'সঙ্গীত কার্যকলাপ', listenMatchScores: 'শুনুন ও মেলান স্কোর',
+    memoryProfilesActive: 'সক্রিয় স্মৃতি প্রোফাইল', gamesRecent: 'সাম্প্রতিক খেলা', medicineDashboard: 'ওষুধ',
+    musicDashboard: 'সঙ্গীত', memoriesDashboard: 'স্মৃতি', gamesDashboard: 'খেলা', markTaken: 'নেওয়া হয়েছে',
+    delayReminder: 'পরে মনে করান', requestNotifications: 'অনুস্মারক চালু করুন', saveSchedule: 'সময়সূচি সংরক্ষণ করুন',
+  },
+  brx: {}, mni: {}, kha: {}, lus: {},
+  ne: {
+    stop: 'रोक्नुहोस्', volumeUp: 'आवाज बढाउनुहोस्', volumeDown: 'आवाज घटाउनुहोस्', favorites: 'मेरा मनपर्ने',
+    playlist: 'प्लेलिस्ट', calm: 'शान्त', memoriesCategory: 'सम्झना', regional: 'क्षेत्रीय / उत्तर पूर्व',
+    instrumental: 'वाद्य संगीत', nature: 'प्रकृतिका आवाज', listenMatch: 'सुन्नुहोस् र मिलाउनुहोस्',
+    listenMatchHint: 'सानो ध्वनि सुनेर सही श्रेणी छान्नुहोस्।', playClip: 'ध्वनि बजाउनुहोस्',
+    matchCategory: 'यो ध्वनि कुन श्रेणीको हो?', notificationTitle: 'औषधिको सम्झना', notificationPermission: 'ब्राउजर सम्झनाको अनुमति दिनुहोस्',
+    medicineSchedule: 'औषधि तालिका', medicineName: 'औषधिको नाम', medicinePhoto: 'औषधिको फोटो', instruction: 'हेरचाहकर्ताको निर्देशन',
+    time: 'समय', frequency: 'आवृत्ति', daily: 'हरेक दिन', weekdays: 'कार्यदिन', weekly: 'साप्ताहिक', startDate: 'सुरु मिति',
+    endDate: 'अन्तिम मिति', voiceInstruction: 'वैकल्पिक आवाज निर्देशन', active: 'सक्रिय', inactive: 'निष्क्रिय',
+    addMedicine: 'औषधि थप्नुहोस्', editMedicine: 'औषधि बदल्नुहोस्', deleteMedicine: 'औषधि हटाउनुहोस्',
+    noMedicines: 'आज कुनै सक्रिय औषधि छैन।', medicineHistory: 'औषधि इतिहास', scheduled: 'तालिकामा', missed: 'छुट्यो',
+    pending: 'बाँकी', todayMedicines: 'आजका औषधि', recentAdherence: 'हालको पालन', safetyNotice: 'हेरचाहकर्ता वा अधिकृत व्यक्तिले दिएको जानकारी मात्र देखाइन्छ। यो एपले औषधि पहिचान वा मात्रा परिवर्तन गर्दैन।',
+    playVoiceCue: 'सम्झना आवाज बजाउनुहोस्', musicActivities: 'सङ्गीत गतिविधि', listenMatchScores: 'सुन्ने र मिलाउने स्कोर',
+    memoryProfilesActive: 'सक्रिय सम्झना प्रोफाइल', gamesRecent: 'हालका खेल गतिविधि', medicineDashboard: 'औषधि',
+    musicDashboard: 'सङ्गीत', memoriesDashboard: 'सम्झना', gamesDashboard: 'खेल', markTaken: 'लिइयो',
+    delayReminder: 'पछि सम्झाउनुहोस्', requestNotifications: 'सम्झना चालु गर्नुहोस्', saveSchedule: 'तालिका सुरक्षित गर्नुहोस्',
+  },
+};
+
+export type CopyKey = keyof typeof copy.en | Stage3Key;
+export const t = (lang: Lang, key: CopyKey): string => {
+  const localized = (copy[lang] as Partial<Record<keyof typeof copy.en, string>>)[key as keyof typeof copy.en];
+  return localized ?? stage3Copy[lang][key as Stage3Key] ?? copy.en[key as keyof typeof copy.en] ?? String(key);
+};
+
+export type VoiceCommand =
+  | 'play' | 'pause' | 'next' | 'previous' | 'stop' | 'repeat' | 'volume up' | 'volume down'
+  | 'play favorites' | 'open music' | 'go home' | 'start' | 'continue' | 'restart' | 'hint' | 'easier' | 'harder';
+
+const voiceAliases: Partial<Record<Lang, Record<VoiceCommand, string[]>>> = {
+  en: {
+    play: ['play'], pause: ['pause'], next: ['next'], previous: ['previous', 'back'], stop: ['stop'],
+    repeat: ['repeat'], 'volume up': ['volume up', 'louder'], 'volume down': ['volume down', 'quieter'],
+    'play favorites': ['play favorites', 'my favorites'], 'open music': ['open music'], 'go home': ['go home', 'home'],
+    start: ['start', 'begin'], continue: ['continue'], restart: ['restart'], hint: ['hint'], easier: ['easier'], harder: ['harder'],
+  },
+  ta: {
+    play: ['இயக்கு'], pause: ['இடைநிறுத்து'], next: ['அடுத்து'], previous: ['முந்தைய'], stop: ['நிறுத்து'], repeat: ['மீண்டும்'],
+    'volume up': ['ஒலியை அதிகரிக்கவும்'], 'volume down': ['ஒலியை குறைக்கவும்'], 'play favorites': ['பிடித்தவை இயக்கு'],
+    'open music': ['இசையைத் திற'], 'go home': ['முகப்பு'], start: ['தொடங்கு'], continue: ['தொடரவும்'], restart: ['மீண்டும் தொடங்கு'],
+    hint: ['குறிப்பு'], easier: ['எளிதாக'], harder: ['கடினமாக'],
+  },
+  hi: {
+    play: ['चलाएं'], pause: ['रोकें'], next: ['अगला'], previous: ['पिछला'], stop: ['रोकें'], repeat: ['दोहराएं'],
+    'volume up': ['आवाज़ बढ़ाएं'], 'volume down': ['आवाज़ कम करें'], 'play favorites': ['पसंदीदा चलाएं'],
+    'open music': ['संगीत खोलें'], 'go home': ['होम'], start: ['शुरू'], continue: ['जारी रखें'], restart: ['फिर शुरू'],
+    hint: ['संकेत'], easier: ['आसान'], harder: ['कठिन'],
+  },
+};
+
+export const resolveVoiceCommand = (lang: Lang, input: string): VoiceCommand | null => {
+  const normalized = input.toLowerCase().replace(/[.,!?]/g, '').trim();
+  const aliases = voiceAliases[lang] ?? voiceAliases.en!;
+  return (Object.entries(aliases) as [VoiceCommand, string[]][]).find(([, phrases]) => phrases.some((phrase) => normalized.includes(phrase)))?.[0] ?? null;
+};

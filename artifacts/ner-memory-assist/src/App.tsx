@@ -1,10 +1,10 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
-  Activity, ArrowLeft, Bell, BookOpen, Brain, Check, ChevronRight, CircleHelp, Clock3,
+  Activity, ArrowLeft, Bell, BellRing, BookOpen, Brain, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3,
   CloudOff, Flower2, Gamepad2, Heart, Home as HomeIcon, Languages, Lightbulb, LockKeyhole,
   Menu, Mic, Music2, Pause, Pencil, Play, Plus, RotateCcw, Settings as SettingsIcon,
-  ShieldCheck, Sparkles, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume2,
+  ShieldAlert, ShieldCheck, Sparkles, Star, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume1, Volume2,
   Wifi, X, type LucideIcon,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
@@ -12,9 +12,13 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { adaptDifficulty, scoreGame, type Difficulty, type GameResult } from '@/lib/adaptive-engine';
+import { demoAudio } from '@/lib/demo-audio';
 import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';
-import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
-import { getGameResults, getMemoryProfiles, readStore, saveGameResult, type MemoryProfile, writeStore } from '@/lib/storage';
+import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
+import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
+import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
+import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
+import { clearMedicineData, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type MemoryProfile, writeStore } from '@/lib/storage';
 
 const queryClient = new QueryClient();
 
@@ -80,15 +84,16 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
   const dispatchVoiceCommand = (command: string) => {
     const normalized = normalizeCommand(command);
+    const canonical = resolveVoiceCommand(lang, command);
     const navigation: Record<string, string> = {
       'go home': '/patient', home: '/patient', 'open games': '/games', games: '/games',
       'open medicine': '/medicine', medicine: '/medicine', 'open memories': '/memories', memories: '/memories',
       'open music': '/music', music: '/music', 'show progress': '/progress', progress: '/progress',
       settings: '/settings',
     };
-    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase))?.[1];
+    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];
     if (target) setLocation(target);
-    window.dispatchEvent(new CustomEvent('ner-voice-command', { detail: normalized }));
+    window.dispatchEvent(new CustomEvent('ner-voice-command', { detail: canonical ?? normalized }));
   };
 
   const speak = () => {
@@ -369,20 +374,208 @@ function MatchGame({ lang, gameType }: { lang: Lang; gameType: 'family-match' | 
   return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? translate('culturalMatch') : translate('familyMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('chooseAnswer')}</p></div>{started && <Badge tone="muted">{translate('round')} {round + 1} / {roundTarget}</Badge>}</div>{!started ? <div className="space-y-5"><DifficultyPicker lang={lang} difficulty={difficulty} setDifficulty={setDifficulty} /><div><p className="mb-3 font-bold">{cultural ? translate('culturalContent') : translate('chooseGame')}</p><div className="grid gap-2 sm:grid-cols-3">{modes.map((value) => <button key={value} onClick={() => setMode(value)} className={`min-h-14 rounded-xl border px-3 text-left text-sm font-bold ${mode === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'border-[hsl(var(--border))]'}`}>{value === 'landmark' ? translate('landmark') : value === 'animal' ? translate('animal') : value === 'object' ? translate('object') : value === 'food' ? translate('food') : translate(value)}</button>)}</div></div><button onClick={startGame} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<div className="flex flex-col items-center rounded-3xl bg-[hsl(var(--muted))] p-6 text-center"><div className={`flex h-32 w-32 items-center justify-center rounded-full ${cultural ? colors[currentCulture.color] : 'bg-[hsl(var(--secondary))]'} text-4xl font-bold text-[hsl(var(--primary))]`}>{cultural ? currentCulture.symbol : currentProfile.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div><p className="mt-4 text-lg font-bold">{translate('chooseAnswer')}</p>{hinted && <p className="mt-2 text-sm text-[hsl(var(--accent))]">{cultural ? currentCulture.titleKey : currentProfile.name}</p>}</div><div className="grid gap-3 sm:grid-cols-2">{options.map((option) => { const id = cultural ? (option as CulturalItem).id : (option as MemoryProfile).id; const label = cultural ? (option as CulturalItem).titleKey : mode === 'photoToRelationship' ? (option as MemoryProfile).relationship : (option as MemoryProfile).name; return <button key={id} onClick={() => choose(id)} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-[hsl(var(--card))] p-4 text-left font-bold transition-all hover:border-[hsl(var(--primary))]"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-sm">{cultural ? (option as CulturalItem).symbol : (option as MemoryProfile).name.charAt(0)}</span>{label}</button>; })}</div>{feedback && <div className={`rounded-2xl p-4 text-center font-bold ${feedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(feedback)}</div>}<div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={startGame} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={() => { setHints((value) => value + 1); setHinted(true); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button></div></div>}</SectionCard>;
 }
 
-function Medicine({ lang }: { lang: Lang }) {
-  const translate = (key: CopyKey) => tr(lang, key);
-  const [items, setItems] = useState(() => readStore('ner-meds', [{ id: 1, name: 'Vitamin D', time: '09:00', period: 'morning', status: 'pending' }, { id: 2, name: 'Warm water', time: '13:00', period: 'afternoon', status: 'pending' }, { id: 3, name: 'Calcium', time: '20:00', period: 'evening', status: 'pending' }]) as { id: number; name: string; time: string; period: string; status: string }[]);
-  const change = (id: number, status: string) => { const next = items.map((item) => item.id === id ? { ...item, status } : item); setItems(next); writeStore('ner-meds', next); };
-  return <div className="gentle-in"><PageIntro icon={Bell} title={translate('medicine')} hint={translate('privacyShort')} /><div className="space-y-4">{items.map((item) => <SectionCard key={item.id} className="flex flex-wrap items-center gap-4"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--secondary))]"><Clock3 size={25} /></div><div className="min-w-[150px] flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-xl font-bold">{item.name}</h3>{item.status !== 'pending' && <Badge tone={item.status === 'later' ? 'accent' : 'primary'}>{item.status === 'taken' ? translate('taken') : translate('later')}</Badge>}</div><p className="mt-1 text-[hsl(var(--muted-foreground))]">{item.time} · {translate(item.period as CopyKey)}</p></div>{item.status === 'pending' ? <div className="flex gap-2"><button onClick={() => change(item.id, 'taken')} className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]">{translate('taken')}</button><button onClick={() => change(item.id, 'later')} className="min-h-12 rounded-xl border px-4 font-bold">{translate('later')}</button></div> : <button onClick={() => change(item.id, 'pending')} className="min-h-12 rounded-xl border px-4 font-bold">{translate('restart')}</button>}</SectionCard>)}</div></div>;
+const blankMedicine = (): MedicineSchedule => ({
+  id: '',
+  name: '',
+  photoDataUrl: '',
+  instruction: '',
+  time: '09:00',
+  frequency: 'daily',
+  startDate: dateKey(),
+  endDate: '',
+  voiceInstruction: '',
+  active: true,
+});
+
+const latestMedicineStatus = (medicineId: string, events: MedicineEvent[], today: string): MedicineEventStatus =>
+  events.filter((event) => event.medicineId === medicineId && event.scheduledFor === today).at(-1)?.status ?? 'scheduled';
+
+function MedicinePhoto({ medicine, large = false }: { medicine: MedicineSchedule; large?: boolean }) {
+  return <div className={`flex items-center justify-center overflow-hidden rounded-3xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))] ${large ? 'h-52 w-52' : 'h-16 w-16'}`}>
+    {medicine.photoDataUrl ? <img src={medicine.photoDataUrl} alt="" className="h-full w-full object-cover" /> : <Bell size={large ? 70 : 28} />}
+  </div>;
 }
+
+function MedicineEditor({ lang, initial, onSave, onCancel }: { lang: Lang; initial: MedicineSchedule; onSave: (medicine: MedicineSchedule) => void; onCancel: () => void }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [form, setForm] = useState(initial);
+  const updatePhoto = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm((value) => ({ ...value, photoDataUrl: String(reader.result ?? '') }));
+    reader.readAsDataURL(file);
+  };
+  return <SectionCard className="pop">
+    <div className="mb-5 flex items-center justify-between"><div><h3 className="serif text-2xl">{initial.id ? translate('editMedicine') : translate('addMedicine')}</h3><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{translate('caregiverEnteredOnly')}</p></div><button onClick={onCancel} aria-label={translate('close')}><X /></button></div>
+    <div className="grid gap-4 md:grid-cols-2">
+      <label className="text-sm font-bold">{translate('medicineName')}<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
+      <label className="text-sm font-bold">{translate('medicinePhoto')}<input type="file" accept="image/*" onChange={(event) => updatePhoto(event.target.files?.[0])} className="mt-2 block min-h-14 w-full rounded-xl border bg-transparent p-3" /><span className="mt-1 block text-xs font-normal text-[hsl(var(--muted-foreground))]">{translate('photoOptional')}</span></label>
+      <label className="text-sm font-bold md:col-span-2">{translate('instruction')}<textarea value={form.instruction} onChange={(event) => setForm({ ...form, instruction: event.target.value })} rows={3} className="mt-2 w-full rounded-xl border bg-transparent p-4" /></label>
+      <label className="text-sm font-bold">{translate('time')}<input type="time" value={form.time} onChange={(event) => setForm({ ...form, time: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
+      <label className="text-sm font-bold">{translate('frequency')}<select value={form.frequency} onChange={(event) => setForm({ ...form, frequency: event.target.value as MedicineSchedule['frequency'] })} className="mt-2 min-h-14 w-full rounded-xl border bg-[hsl(var(--card))] px-4"><option value="daily">{translate('daily')}</option><option value="weekdays">{translate('weekdays')}</option><option value="weekly">{translate('weekly')}</option></select></label>
+      <label className="text-sm font-bold">{translate('startDate')}<input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
+      <label className="text-sm font-bold">{translate('endDate')}<input type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
+      <label className="text-sm font-bold md:col-span-2">{translate('voiceInstruction')}<input value={form.voiceInstruction} onChange={(event) => setForm({ ...form, voiceInstruction: event.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
+      <label className="flex min-h-14 items-center gap-3 rounded-xl border px-4 font-bold md:col-span-2"><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} className="h-5 w-5" />{form.active ? translate('active') : translate('inactive')}</label>
+    </div>
+    <div className="mt-5 flex justify-end gap-2"><button onClick={onCancel} className="min-h-12 rounded-xl px-4 font-bold">{translate('cancel')}</button><button disabled={!form.name.trim()} onClick={() => onSave({ ...form, name: form.name.trim() })} className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-5 font-bold text-[hsl(var(--primary-foreground))] disabled:opacity-50">{translate('saveSchedule')}</button></div>
+  </SectionCard>;
+}
+
+function MedicineHistory({ lang, events, schedules }: { lang: Lang; events: MedicineEvent[]; schedules: MedicineSchedule[] }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const names = new Map(schedules.map((medicine) => [medicine.id, medicine.name]));
+  return <SectionCard><h3 className="mb-4 text-xl font-bold">{translate('medicineHistory')}</h3>{events.length ? <div className="space-y-2">{events.slice(-12).reverse().map((event) => <div key={event.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-[hsl(var(--muted)/.55)] p-3"><CalendarDays size={18} className="text-[hsl(var(--primary))]" /><span className="min-w-32 flex-1 font-bold">{names.get(event.medicineId) ?? event.medicineId}</span><Badge tone={event.status === 'missed' ? 'accent' : event.status === 'taken' ? 'primary' : 'muted'}>{translate(event.status === 'scheduled' ? 'scheduled' : event.status)}</Badge><span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date(event.timestamp).toLocaleString(lang)}</span></div>)}</div> : <p className="text-sm text-[hsl(var(--muted-foreground))]">{translate('noResults')}</p>}</SectionCard>;
+}
+
+function Medicine({ lang, role }: { lang: Lang; role: Role }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [schedules, setSchedules] = useState<MedicineSchedule[]>(() => getMedicineSchedules());
+  const [events, setEvents] = useState<MedicineEvent[]>(() => getMedicineEvents());
+  const [editing, setEditing] = useState<MedicineSchedule | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [notificationState, setNotificationState] = useState(notificationPermission());
+  const [fallbackReminder, setFallbackReminder] = useState(notificationPermission() !== 'granted');
+  const today = dateKey();
+  const todaySchedules = schedules.filter((medicine) => isScheduledForDate(medicine)).sort((a, b) => a.time.localeCompare(b.time));
+  const currentMedicine = todaySchedules[currentIndex % Math.max(todaySchedules.length, 1)];
+  const currentStatus = currentMedicine ? latestMedicineStatus(currentMedicine.id, events, today) : 'scheduled';
+
+  useEffect(() => {
+    const scheduled = todaySchedules.filter((medicine) => !events.some((event) => event.medicineId === medicine.id && event.scheduledFor === today && event.status === 'scheduled'));
+    if (scheduled.length) {
+      const additions = scheduled.map((medicine) => ({ id: `scheduled-${medicine.id}-${today}`, medicineId: medicine.id, status: 'scheduled' as const, timestamp: new Date().toISOString(), scheduledFor: today }));
+      const next = [...events, ...additions];
+      setEvents(next);
+      writeStore('ner-medicine-events', next);
+    }
+  }, [today, todaySchedules, events]);
+
+  useEffect(() => {
+    const checkReminders = () => {
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      todaySchedules.filter((medicine) => medicine.time === currentTime).forEach((medicine) => {
+        const key = `ner-notified-${medicine.id}-${today}`;
+        if (localStorage.getItem(key)) return;
+        const sent = sendMedicineNotification(medicine, { title: translate('notificationTitle'), scheduled: translate('scheduled'), taken: translate('taken'), later: translate('later') });
+        if (!sent) setFallbackReminder(true);
+        localStorage.setItem(key, '1');
+      });
+    };
+    checkReminders();
+    const timer = window.setInterval(checkReminders, 60000);
+    return () => window.clearInterval(timer);
+  }, [lang, today, todaySchedules]);
+
+  const record = (medicine: MedicineSchedule, status: Exclude<MedicineEventStatus, 'scheduled'>) => {
+    const event = { id: `${status}-${medicine.id}-${Date.now()}`, medicineId: medicine.id, status, timestamp: new Date().toISOString(), scheduledFor: today };
+    saveMedicineEvent(event);
+    setEvents(getMedicineEvents());
+    if (status !== 'missed') setCurrentIndex((value) => Math.min(value + 1, Math.max(todaySchedules.length - 1, 0)));
+  };
+  const requestNotifications = async () => {
+    const permission = await requestNotificationPermission();
+    setNotificationState(permission);
+    setFallbackReminder(permission !== 'granted');
+  };
+  const saveSchedule = (medicine: MedicineSchedule) => {
+    const next = medicine.id ? schedules.map((item) => item.id === medicine.id ? medicine : item) : [...schedules, { ...medicine, id: `medicine-${Date.now()}` }];
+    setSchedules(next);
+    saveMedicineSchedules(next);
+    setEditing(null);
+  };
+  const removeSchedule = (id: string) => { const next = schedules.filter((item) => item.id !== id); setSchedules(next); saveMedicineSchedules(next); };
+
+  if (role !== 'patient') {
+    const todayStatuses = schedules.filter((medicine) => isScheduledForDate(medicine)).map((medicine) => latestMedicineStatus(medicine.id, events, today));
+    const takenCount = todayStatuses.filter((status) => status === 'taken').length;
+    const missedCount = todayStatuses.filter((status) => status === 'missed').length;
+    const pendingCount = todayStatuses.filter((status) => status === 'scheduled' || status === 'delayed').length;
+    return <div className="gentle-in space-y-5"><PageIntro icon={Bell} title={translate('medicineSchedule')} hint={translate('safetyNotice')} />
+      <div className="grid gap-3 sm:grid-cols-3"><StatCard label={translate('takenCount')} value={String(takenCount)} detail={translate('todayMedicines')} /><StatCard label={translate('pendingCount')} value={String(pendingCount)} detail={translate('todayMedicines')} /><StatCard label={translate('missedCount')} value={String(missedCount)} detail={translate('todayMedicines')} /></div>
+      {editing ? <MedicineEditor lang={lang} initial={editing} onSave={saveSchedule} onCancel={() => setEditing(null)} /> : <button onClick={() => setEditing(blankMedicine())} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Plus size={20} />{translate('addMedicine')}</button>}
+      <SectionCard><h3 className="mb-4 text-xl font-bold">{translate('medicineSchedule')}</h3><div className="space-y-3">{schedules.map((medicine) => <div key={medicine.id} className="flex flex-wrap items-center gap-3 rounded-2xl border p-3"><MedicinePhoto medicine={medicine} /><div className="min-w-40 flex-1"><p className="font-bold">{medicine.name}</p><p className="text-sm text-[hsl(var(--muted-foreground))]">{medicine.time} · {translate(medicine.frequency)}</p><Badge tone={medicine.active ? 'primary' : 'muted'}>{medicine.active ? translate('active') : translate('inactive')}</Badge></div><button onClick={() => setEditing(medicine)} className="min-h-12 rounded-xl border px-4 font-bold">{translate('editMedicine')}</button><button onClick={() => removeSchedule(medicine.id)} className="min-h-12 rounded-xl border border-[hsl(var(--destructive)/.4)] px-4 font-bold text-[hsl(var(--destructive))]">{translate('deleteMedicine')}</button></div>)}</div></SectionCard>
+      <MedicineHistory lang={lang} events={events} schedules={schedules} />
+    </div>;
+  }
+
+  return <div className="gentle-in space-y-5"><PageIntro icon={Bell} title={translate('medicine')} hint={translate('safetyNotice')} />
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--primary)/.07)] p-4"><div className="flex items-center gap-3"><BellRing className="text-[hsl(var(--primary))]" /><span className="text-sm">{notificationState === 'granted' ? translate('notificationsEnabled') : fallbackReminder ? translate('notificationFallback') : translate('notificationPermission')}</span></div>{notificationState !== 'granted' && <button onClick={requestNotifications} className="min-h-12 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]">{translate('requestNotifications')}</button>}</div>
+    {currentMedicine ? <SectionCard className="flex flex-col items-center text-center"><MedicinePhoto medicine={currentMedicine} large /><Badge tone={currentStatus === 'taken' ? 'primary' : currentStatus === 'missed' ? 'accent' : 'muted'}>{translate(currentStatus === 'scheduled' ? 'pending' : currentStatus)}</Badge><h3 className="serif mt-4 text-4xl">{currentMedicine.name}</h3><p className="mt-2 flex items-center gap-2 text-lg"><Clock3 size={20} />{currentMedicine.time}</p><p className="mt-4 max-w-xl text-lg leading-relaxed text-[hsl(var(--muted-foreground))]">{currentMedicine.instruction}</p>{currentMedicine.voiceInstruction && <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{currentMedicine.voiceInstruction}</p>}<div className="mt-6 flex w-full max-w-xl flex-wrap justify-center gap-3"><button onClick={() => record(currentMedicine, 'taken')} className="flex min-h-16 flex-1 items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] px-5 text-lg font-bold text-[hsl(var(--primary-foreground))]"><CheckCircle2 size={22} />{translate('markTaken')}</button><button onClick={() => record(currentMedicine, 'delayed')} className="min-h-16 flex-1 rounded-2xl border px-5 text-lg font-bold">{translate('delayReminder')}</button></div><div className="mt-5 flex gap-2"><button disabled={currentIndex === 0} onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))} className="rounded-xl border p-3 disabled:opacity-40" aria-label={translate('previous')}><ChevronLeft /></button><span className="px-3 py-3 text-sm text-[hsl(var(--muted-foreground))]">{currentIndex + 1} / {todaySchedules.length}</span><button disabled={currentIndex >= todaySchedules.length - 1} onClick={() => setCurrentIndex((value) => Math.min(todaySchedules.length - 1, value + 1))} className="rounded-xl border p-3 disabled:opacity-40" aria-label={translate('next')}><ChevronRight /></button></div></SectionCard> : <SectionCard className="py-14 text-center"><Bell className="mx-auto mb-4 text-[hsl(var(--primary))]" size={42} /><p className="text-lg font-bold">{translate('noMedicines')}</p></SectionCard>}
+    <MedicineHistory lang={lang} events={events} schedules={schedules} />
+  </div>;
+}
+
+const musicCategoryKeys: Record<MusicCategory, CopyKey> = { favorites: 'favorites', calm: 'calm', memories: 'memoriesCategory', regional: 'regional', instrumental: 'instrumental', nature: 'nature' };
 
 function Music({ lang }: { lang: Lang }) {
   const translate = (key: CopyKey) => tr(lang, key);
   const [playing, setPlaying] = useState(false);
-  const [track, setTrack] = useState(0);
+  const [trackId, setTrackId] = useState(demoMusicTracks[0].id);
   const [repeat, setRepeat] = useState(false);
-  const tracks = ['Bihu morning rhythm', 'Bamboo flute at dawn', 'Monsoon on the hills'];
-  return <div className="gentle-in"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} /><div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><SectionCard className="overflow-hidden bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"><div className="relative flex min-h-72 flex-col justify-between overflow-hidden rounded-2xl bg-[hsl(var(--primary)/.35)] p-6"><div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[25px] border-[hsl(var(--accent)/.6)]" /><div className="relative flex justify-between"><Badge tone="accent">{translate('music')}</Badge><Volume2 size={21} /></div><div className="relative"><p className="text-sm opacity-70">{translate('region')}</p><h3 className="serif mt-1 text-3xl">{tracks[track]}</h3><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/20"><div className="h-full w-2/5 bg-[hsl(var(--accent))]" /></div><div className="mt-5 flex items-center justify-center gap-5"><button onClick={() => setTrack(track === 0 ? tracks.length - 1 : track - 1)} aria-label={translate('previous')} className="rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={() => setPlaying(!playing)} aria-label={playing ? translate('pause') : translate('play')} className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white">{playing ? <Pause /> : <Play className="ml-1" />}</button><button onClick={() => setTrack((track + 1) % tracks.length)} aria-label={translate('next')} className="rotate-180 rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button></div></div></div></SectionCard><SectionCard><h3 className="mb-4 text-xl font-bold">{translate('chooseGame')}</h3><div className="space-y-3">{tracks.map((name, index) => <button key={name} onClick={() => { setTrack(index); setPlaying(true); }} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${track === index ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : 'border-[hsl(var(--border))]'}`}><div className="rounded-xl bg-[hsl(var(--secondary))] p-3"><Music2 size={20} /></div><div className="flex-1"><p className="font-bold">{name}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">3 minutes</p></div>{track === index && playing ? <Pause size={18} /> : <Play size={18} />}</button>)}</div><button onClick={() => setRepeat(!repeat)} className={`mt-5 flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold ${repeat ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}><RotateCcw size={17} />{translate('repeat')}</button></SectionCard></div></div>;
+  const [volume, setVolume] = useState(() => readStore('ner-music-volume', 0.18));
+  const [category, setCategory] = useState<MusicCategory>('regional');
+  const [favorites, setFavorites] = useState<string[]>(() => readStore('ner-music-favorites', []));
+  const [listenStarted, setListenStarted] = useState(false);
+  const [listenTrack, setListenTrack] = useState<MusicTrack>(demoMusicTracks[0]);
+  const [listenAttempts, setListenAttempts] = useState(0);
+  const [listenStartedAt, setListenStartedAt] = useState(0);
+  const [listenFeedback, setListenFeedback] = useState<'correct' | 'tryAgain' | null>(null);
+  const [listenResult, setListenResult] = useState<GameResult | null>(null);
+  const selectedTrack = demoMusicTracks.find((track) => track.id === trackId) ?? demoMusicTracks[0];
+  const visibleTracks = category === 'favorites' ? demoMusicTracks.filter((track) => favorites.includes(track.id)) : demoMusicTracks.filter((track) => track.category === category);
+  const categories: MusicCategory[] = ['favorites', 'calm', 'memories', 'regional', 'instrumental', 'nature'];
+
+  useEffect(() => () => demoAudio.stop(), []);
+  useEffect(() => { demoAudio.setVolume(volume); writeStore('ner-music-volume', volume); }, [volume]);
+  useEffect(() => {
+    const onCommand = (event: Event) => {
+      const command = (event as CustomEvent<string>).detail;
+      if (command === 'play' || command === 'continue') { setPlaying(true); demoAudio.play(selectedTrack.tone); }
+      if (command === 'pause') { setPlaying(false); demoAudio.pause(); }
+      if (command === 'stop') { setPlaying(false); demoAudio.stop(); }
+      if (command === 'next') { setTrackId(demoMusicTracks[(demoMusicTracks.findIndex((track) => track.id === trackId) + 1) % demoMusicTracks.length].id); setPlaying(true); }
+      if (command === 'previous') { setTrackId(demoMusicTracks[(demoMusicTracks.findIndex((track) => track.id === trackId) - 1 + demoMusicTracks.length) % demoMusicTracks.length].id); setPlaying(true); }
+      if (command === 'repeat') setRepeat((value) => !value);
+      if (command === 'volume up') setVolume((value) => Math.min(1, value + 0.1));
+      if (command === 'volume down') setVolume((value) => Math.max(0, value - 0.1));
+      if (command === 'play favorites') setCategory('favorites');
+    };
+    window.addEventListener('ner-voice-command', onCommand);
+    return () => window.removeEventListener('ner-voice-command', onCommand);
+  }, [selectedTrack, trackId]);
+
+  const togglePlaying = () => {
+    if (playing) { setPlaying(false); demoAudio.pause(); } else { setPlaying(true); demoAudio.play(selectedTrack.tone); }
+  };
+  const chooseTrack = (track: MusicTrack) => { setTrackId(track.id); setPlaying(true); demoAudio.play(track.tone); };
+  const toggleFavorite = () => {
+    const next = favorites.includes(selectedTrack.id) ? favorites.filter((id) => id !== selectedTrack.id) : [...favorites, selectedTrack.id];
+    setFavorites(next); writeStore('ner-music-favorites', next);
+  };
+  const startListenMatch = () => { const next = demoMusicTracks[Math.floor(Math.random() * demoMusicTracks.length)]; setListenTrack(next); setListenAttempts(0); setListenFeedback(null); setListenStartedAt(Date.now()); setListenStarted(true); setListenResult(null); demoAudio.play(next.tone); };
+  const playListenClip = () => { demoAudio.play(listenTrack.tone); window.setTimeout(() => demoAudio.stop(), 2600); };
+  const chooseListenCategory = (choice: Exclude<MusicCategory, 'favorites'>) => {
+    if (!listenStarted || listenFeedback === 'correct') return;
+    const nextAttempts = listenAttempts + 1;
+    setListenAttempts(nextAttempts);
+    if (choice === listenTrack.category) {
+      setListenFeedback('correct');
+      const result: GameResult = { id: `listen-match-${Date.now()}`, gameType: 'listen-match', accuracy: 1 / nextAttempts, completionTime: Math.max(1, Math.floor((Date.now() - listenStartedAt) / 1000)), attempts: nextAttempts, hintsUsed: 0, difficulty: 'easy', score: scoreGame(1 / nextAttempts, 'easy', nextAttempts, 0), createdAt: Date.now() };
+      window.setTimeout(() => { saveGameResult(result); setListenResult(result); setListenStarted(false); demoAudio.stop(); }, 650);
+    } else {
+      setListenFeedback('tryAgain');
+      window.setTimeout(() => setListenFeedback(null), 800);
+    }
+  };
+  if (listenResult) return <div className="gentle-in space-y-5"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} /><GameResultPanel lang={lang} result={listenResult} onAgain={startListenMatch} /><p className="text-center text-sm text-[hsl(var(--muted-foreground))]">{translate('musicResultSaved')}</p></div>;
+  return <div className="gentle-in space-y-5"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} />
+    <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><SectionCard className="overflow-hidden bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"><div className="relative flex min-h-80 flex-col justify-between overflow-hidden rounded-2xl bg-[hsl(var(--primary)/.35)] p-6"><div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[25px] border-[hsl(var(--accent)/.6)]" /><div className="relative flex justify-between"><Badge tone="accent">{translate(musicCategoryKeys[selectedTrack.category])}</Badge><Volume2 size={21} /></div><div className="relative"><p className="text-sm opacity-70">{translate('demoAudio')}</p><h3 className="serif mt-1 text-3xl">{selectedTrack.title}</h3><p className="mt-2 text-sm opacity-75">{selectedTrack.description}</p><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/20"><div className={`h-full bg-[hsl(var(--accent))] ${playing ? 'w-2/3' : 'w-1/5'}`} /></div><div className="mt-5 flex items-center justify-center gap-3"><button onClick={() => { const index = (demoMusicTracks.findIndex((track) => track.id === selectedTrack.id) - 1 + demoMusicTracks.length) % demoMusicTracks.length; chooseTrack(demoMusicTracks[index]); }} aria-label={translate('previous')} className="rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={togglePlaying} aria-label={playing ? translate('pause') : translate('play')} className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white">{playing ? <Pause /> : <Play className="ml-1" />}</button><button onClick={() => { const index = (demoMusicTracks.findIndex((track) => track.id === selectedTrack.id) + 1) % demoMusicTracks.length; chooseTrack(demoMusicTracks[index]); }} aria-label={translate('next')} className="rotate-180 rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={() => { setPlaying(false); demoAudio.stop(); }} aria-label={translate('stop')} className="rounded-full p-3 hover:bg-white/10"><CircleHelp size={20} /></button></div></div></div></SectionCard>
+      <SectionCard><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="text-xl font-bold">{translate('playlist')}</h3><button onClick={toggleFavorite} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold" aria-label={translate(favorites.includes(selectedTrack.id) ? 'unfavorite' : 'favorite')}><Star size={18} fill={favorites.includes(selectedTrack.id) ? 'currentColor' : 'none'} />{translate(favorites.includes(selectedTrack.id) ? 'unfavorite' : 'favorite')}</button></div><div className="mb-4 flex flex-wrap gap-2">{categories.map((value) => <button key={value} onClick={() => setCategory(value)} className={`min-h-11 rounded-xl border px-3 text-sm font-bold ${category === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}>{translate(musicCategoryKeys[value])}</button>)}</div><div className="space-y-3">{visibleTracks.length ? visibleTracks.map((track) => <button key={track.id} onClick={() => chooseTrack(track)} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${selectedTrack.id === track.id ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : 'border-[hsl(var(--border))]'}`}><div className="rounded-xl bg-[hsl(var(--secondary))] p-3"><Music2 size={20} /></div><div className="flex-1"><p className="font-bold">{track.title}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">{track.duration} · {translate('demoAudio')}</p></div>{selectedTrack.id === track.id && playing ? <Pause size={18} /> : <Play size={18} />}</button>) : <p className="rounded-2xl bg-[hsl(var(--muted))] p-4 text-sm">{translate('noResults')}</p>}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button onClick={() => { setPlaying(false); demoAudio.stop(); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><CircleHelp size={17} />{translate('stop')}</button><button onClick={() => setRepeat(!repeat)} className={`flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold ${repeat ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}><RotateCcw size={17} />{translate('repeat')}</button><label className="flex min-h-12 items-center gap-2 rounded-xl border px-3"><Volume1 size={18} /><input aria-label={translate('volume')} type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => setVolume(Number(event.target.value))} /></label></div></SectionCard></div>
+    <SectionCard><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{translate('listenMatch')}</Badge><h3 className="serif mt-2 text-3xl">{translate('listenMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('listenMatchHint')}</p></div>{listenStarted && <Badge tone="muted">{translate('attempts')}: {listenAttempts}</Badge>}</div>{!listenStarted ? <button onClick={startListenMatch} className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button> : <div className="mt-5 space-y-4"><button onClick={playListenClip} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--secondary))] font-bold"><Volume2 size={20} />{translate('playClip')}</button><p className="font-bold">{translate('matchCategory')}</p><div className="grid gap-3 sm:grid-cols-3">{(['calm', 'regional', 'nature'] as const).map((choice) => <button key={choice} onClick={() => chooseListenCategory(choice)} className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border p-3 font-bold"><Music2 size={22} className="text-[hsl(var(--primary))]" />{translate(musicCategoryKeys[choice])}</button>)}</div>{listenFeedback && <div className={`rounded-2xl p-4 text-center font-bold ${listenFeedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(listenFeedback)}</div>}</div>}</SectionCard>
+    <p className="text-center text-xs text-[hsl(var(--muted-foreground))]">{translate('audioDemoNote')}</p>
+  </div>;
 }
 
 function Memories({ lang }: { lang: Lang }) {

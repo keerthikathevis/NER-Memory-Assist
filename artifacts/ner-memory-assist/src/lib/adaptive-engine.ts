@@ -2,7 +2,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type GameResult = {
   id: string;
-  gameType: 'personalized-jigsaw' | 'family-match' | 'cultural-jigsaw' | 'cultural-match';
+  gameType: 'personalized-jigsaw' | 'family-match' | 'cultural-jigsaw' | 'cultural-match' | 'listen-match';
   accuracy: number;
   completionTime: number;
   attempts: number;
