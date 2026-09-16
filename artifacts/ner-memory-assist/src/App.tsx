@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   Activity, ArrowLeft, Bell, BellRing, BookOpen, Brain, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3,
@@ -16,6 +16,7 @@ import { demoAudio } from '@/lib/demo-audio';
 import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';
 import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
+import { getSpeechRecognitionLocale } from '@/lib/voiceLocales';
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
 import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
@@ -43,15 +44,20 @@ function useAppPrefs() {
 
 type SpeechRecognitionLike = {
   lang: string;
+  continuous?: boolean;
+  interimResults?: boolean;
+  processLocally?: boolean;
   start: () => void;
   stop: () => void;
+  onstart: (() => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event?: unknown) => void) | null;
   onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
 };
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 function getSpeechRecognition() {
+  if (typeof window === 'undefined') return undefined;
   const browser = window as unknown as {
     SpeechRecognition?: SpeechRecognitionConstructor;
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
@@ -105,23 +111,44 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     window.dispatchEvent(new CustomEvent('ner-voice-command', { detail: canonical ?? normalized }));
   };
 
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
   const speak = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
     const Speech = getSpeechRecognition();
-
-    // Always give the user immediate feedback when the voice button is pressed.
-    setListening(true);
-
     if (!Speech) {
-      const message = translate('micUnavailable');
-      speakText(message, lang);
+      setListening(true);
+      speakText(translate('micUnavailable'), lang);
       window.setTimeout(() => setListening(false), 2200);
       return;
     }
 
     const recognition = new Speech();
-    recognition.lang = languageOptions.find((item) => item.id === lang)?.speechLocale ?? 'en-IN';
-    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.lang = getSpeechRecognitionLocale(lang);
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    // Chromium supports local/on-device recognition on some browser versions.
+    // Only request it when explicitly available; otherwise the browser can use
+    // its normal online recognizer. This avoids falsely claiming offline support.
+    if ('processLocally' in recognition) {
+      try { recognition.processLocally = !navigator.onLine; } catch {}
+    }
+
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setListening(false);
+    };
     recognition.onerror = () => {
+      recognitionRef.current = null;
       setListening(false);
       speakText(translate('micUnavailable'), lang);
     };
@@ -137,10 +164,16 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     try {
       recognition.start();
     } catch {
+      recognitionRef.current = null;
       setListening(false);
       speakText(translate('micUnavailable'), lang);
     }
   };
+
+  useEffect(() => () => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+  }, []);
 
   const titleKey: Record<string, CopyKey> = {
     '/patient': 'home', '/games': 'games', '/medicine': 'medicine', '/music': 'music',
@@ -181,7 +214,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
             <div className={`hidden items-center gap-2 rounded-full px-3 py-2 text-xs sm:flex ${offline ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--primary)/.12)]'}`}>
               {offline ? <CloudOff size={15} /> : <Wifi size={15} />}<span>{offline ? translate('offlineDataSaved') : translate('online')}</span>
             </div>
-            <button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid="button-voice" onClick={speak} title={translate('voice')}><Mic size={22} /></button>
+            <button type="button" className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid="button-voice" onClick={speak} aria-label={translate('voice')} title={translate('voice')}><Mic size={22} /></button>
           </div>
         </header>
         <main className="mx-auto max-w-6xl p-4 pb-28 md:p-8">
