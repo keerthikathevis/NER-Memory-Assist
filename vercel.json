@@ -1,5 +1,5 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/ner-memory-assist build && rm -rf public && cp -R artifacts/ner-memory-assist/dist/public public",
-  "outputDirectory": "public"
+  "buildCommand": "pnpm --filter @workspace/ner-memory-assist build",
+  "outputDirectory": "dist/public"
 }
