@@ -1,0 +1,61 @@
+name: Connect offline multilingual voice
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/ner-memory-assist/src/App.tsx'
+      - 'artifacts/ner-memory-assist/src/lib/voiceLocales.ts'
+      - 'artifacts/ner-memory-assist/src/lib/voiceIntegration.ts'
+      - '.github/workflows/connect-offline-voice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[offline-voice]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch App.tsx
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('artifacts/ner-memory-assist/src/App.tsx')
+          s = p.read_text(encoding='utf-8')
+
+          s = s.replace("import { type ReactNode, useEffect, useMemo, useState } from 'react';", "import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';")
+          s = s.replace("import { speakText } from '@/lib/voice';", "import { speakText } from '@/lib/voice';\nimport { getSpeechRecognitionLocale } from '@/lib/voiceLocales';")
+
+          old_type = """type SpeechRecognitionLike = {\n  lang: string;\n  start: () => void;\n  stop: () => void;\n  onend: (() => void) | null;\n  onerror: (() => void) | null;\n  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;\n};"""
+          new_type = """type SpeechRecognitionLike = {\n  lang: string;\n  continuous?: boolean;\n  interimResults?: boolean;\n  processLocally?: boolean;\n  start: () => void;\n  stop: () => void;\n  onstart: (() => void) | null;\n  onend: (() => void) | null;\n  onerror: ((event?: unknown) => void) | null;\n  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;\n};"""
+          if old_type in s:
+              s = s.replace(old_type, new_type, 1)
+
+          old_get = """function getSpeechRecognition() {\n  const browser = window as unknown as {\n    SpeechRecognition?: SpeechRecognitionConstructor;\n    webkitSpeechRecognition?: SpeechRecognitionConstructor;\n  };\n  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition;\n}"""
+          new_get = """function getSpeechRecognition() {\n  if (typeof window === 'undefined') return undefined;\n  const browser = window as unknown as {\n    SpeechRecognition?: SpeechRecognitionConstructor;\n    webkitSpeechRecognition?: SpeechRecognitionConstructor;\n  };\n  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition;\n}"""
+          if old_get in s:
+              s = s.replace(old_get, new_get, 1)
+
+          start = s.index('  const speak = () => {')
+          end = s.index('\n\n  const titleKey:', start)
+          new_speak = """  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);\n\n  const speak = () => {\n    if (recognitionRef.current) {\n      recognitionRef.current.stop();\n      recognitionRef.current = null;\n      setListening(false);\n      return;\n    }\n\n    const Speech = getSpeechRecognition();\n    if (!Speech) {\n      setListening(true);\n      speakText(translate('micUnavailable'), lang);\n      window.setTimeout(() => setListening(false), 2200);\n      return;\n    }\n\n    const recognition = new Speech();\n    recognitionRef.current = recognition;\n    recognition.lang = getSpeechRecognitionLocale(lang);\n    recognition.continuous = false;\n    recognition.interimResults = false;\n\n    // Chromium supports local/on-device recognition on some browser versions.\n    // Only request it when explicitly available; otherwise the browser can use\n    // its normal online recognizer. This avoids falsely claiming offline support.\n    if ('processLocally' in recognition) {\n      try { recognition.processLocally = !navigator.onLine; } catch {}\n    }\n\n    recognition.onstart = () => setListening(true);\n    recognition.onend = () => {\n      recognitionRef.current = null;\n      setListening(false);\n    };\n    recognition.onerror = () => {\n      recognitionRef.current = null;\n      setListening(false);\n      speakText(translate('micUnavailable'), lang);\n    };\n    recognition.onresult = (event) => {\n      const transcript = event.results[0]?.[0]?.transcript ?? '';\n      if (!transcript.trim()) return;\n      dispatchVoiceCommand(transcript);\n      const canonical = resolveVoiceCommand(lang, transcript);\n      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;\n      window.setTimeout(() => { speakText(response, lang); }, 150);\n    };\n\n    try {\n      recognition.start();\n    } catch {\n      recognitionRef.current = null;\n      setListening(false);\n      speakText(translate('micUnavailable'), lang);\n    }\n  };\n\n  useEffect(() => () => {\n    recognitionRef.current?.stop();\n    recognitionRef.current = null;\n  }, []);"""
+          s = s[:start] + new_speak + s[end:]
+
+          old_button = '<button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? \'bg-[hsl(var(--accent))] text-white\' : \'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]\'}`} data-testid="button-voice" onClick={speak} title={translate(\'voice\')}><Mic size={22} /></button>'
+          new_button = '<button type="button" className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? \'bg-[hsl(var(--accent))] text-white\' : \'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]\'}`} data-testid="button-voice" onClick={speak} aria-label={translate(\'voice\')} title={translate(\'voice\')}><Mic size={22} /></button>'
+          if old_button in s:
+              s = s.replace(old_button, new_button, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add artifacts/ner-memory-assist/src/App.tsx .github/workflows/connect-offline-voice.yml
+          git diff --cached --quiet && exit 0
+          git commit -m 'Connect offline multilingual voice [offline-voice]'
+          git push
