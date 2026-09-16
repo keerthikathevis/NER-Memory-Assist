@@ -15,6 +15,7 @@ import { adaptDifficulty, scoreGame, type Difficulty, type GameResult } from '@/
 import { demoAudio } from '@/lib/demo-audio';
 import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';
 import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
+import { speakText } from '@/lib/voice';
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
 import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
@@ -118,6 +119,11 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript ?? '';
       dispatchVoiceCommand(transcript);
+      if (transcript.trim()) {
+        const canonical = resolveVoiceCommand(lang, transcript);
+        const response = canonical ? `${canonical}` : transcript;
+        window.setTimeout(() => { speakText(response, lang); }, 150);
+      }
     };
     setListening(true);
     try { recognition.start(); } catch { setListening(false); }
