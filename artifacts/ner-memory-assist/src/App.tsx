@@ -107,26 +107,39 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
   const speak = () => {
     const Speech = getSpeechRecognition();
+
+    // Always give the user immediate feedback when the voice button is pressed.
+    setListening(true);
+
     if (!Speech) {
-      setListening(true);
-      window.setTimeout(() => setListening(false), 1800);
+      const message = translate('micUnavailable');
+      speakText(message, lang);
+      window.setTimeout(() => setListening(false), 2200);
       return;
     }
+
     const recognition = new Speech();
     recognition.lang = languageOptions.find((item) => item.id === lang)?.speechLocale ?? 'en-IN';
     recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+    recognition.onerror = () => {
+      setListening(false);
+      speakText(translate('micUnavailable'), lang);
+    };
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript ?? '';
+      if (!transcript.trim()) return;
       dispatchVoiceCommand(transcript);
-      if (transcript.trim()) {
-        const canonical = resolveVoiceCommand(lang, transcript);
-        const response = canonical ? `${canonical}` : transcript;
-        window.setTimeout(() => { speakText(response, lang); }, 150);
-      }
+      const canonical = resolveVoiceCommand(lang, transcript);
+      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;
+      window.setTimeout(() => { speakText(response, lang); }, 150);
     };
-    setListening(true);
-    try { recognition.start(); } catch { setListening(false); }
+
+    try {
+      recognition.start();
+    } catch {
+      setListening(false);
+      speakText(translate('micUnavailable'), lang);
+    }
   };
 
   const titleKey: Record<string, CopyKey> = {
