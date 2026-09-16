@@ -1,0 +1,42 @@
+name: Apply offline voice integration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/ner-memory-assist/src/lib/offline-voice.ts'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch App.tsx
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('artifacts/ner-memory-assist/src/App.tsx')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("import { speakText } from '@/lib/voice';", "import { speakText } from '@/lib/voice';\nimport { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/offline-voice';")
+          s = s.replace("  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;", "  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;\n  processLocally?: boolean;")
+          s = s.replace("function getSpeechRecognition() {\n  const browser = window as unknown as {", "function getSpeechRecognition() {\n  if (typeof window === 'undefined') return undefined;\n  const browser = window as unknown as {")
+          old = """    const recognition = new Speech();\n    recognition.lang = languageOptions.find((item) => item.id === lang)?.speechLocale ?? 'en-IN';\n    recognition.onend = () => setListening(false);"""
+          new = """    const recognition = new Speech();\n    const speechLocale = languageOptions.find((item) => item.id === lang)?.speechLocale ?? 'en-IN';\n    recognition.lang = speechLocale;\n    const offlineVoice = getOfflineVoiceCapability();\n    if (!navigator.onLine && offlineVoice.processLocally) {\n      recognition.processLocally = true;\n      void ensureOfflineVoiceLanguage(speechLocale);\n    }\n    recognition.onend = () => setListening(false);"""
+          if old in s: s = s.replace(old, new, 1)
+          old_button = "<button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid=\"button-voice\" onClick={speak} title={translate('voice')}><Mic size={22} /></button>"
+          new_button = "<button type=\"button\" aria-label={translate('voice')} className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid=\"button-voice\" onClick={speak} title={translate('voice')}><Mic size={22} /></button>"
+          s = s.replace(old_button, new_button, 1)
+          p.write_text(s, encoding='utf-8')
+      - name: Commit if changed
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet; then exit 0; fi
+          git add artifacts/ner-memory-assist/src/App.tsx
+          git commit -m 'Connect offline multilingual voice to mic handler'
+          git push
