@@ -1,21 +1,23 @@
 name: Fix voice button
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'artifacts/ner-memory-assist/src/App.tsx'
+      - '.github/workflows/fix-voice-button.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   fix:
-    if: ${{ !contains(github.event.head_commit.message, '[voice-button-fixed]') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Patch voice button
         shell: python
         run: |
@@ -134,7 +136,7 @@ jobs:
   };'''
           if old_speak in text:
               text = text.replace(old_speak, new_speak, 1)
-          else:
+          elif 'const recognitionRef = useMemo' not in text:
               raise SystemExit('Expected voice handler not found; no changes made.')
 
           old_button = '''            <button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid="button-voice" onClick={speak} title={translate('voice')}><Mic size={22} /></button>'''
@@ -143,13 +145,13 @@ jobs:
               text = text.replace(old_button, new_button, 1)
 
           path.write_text(text, encoding='utf-8')
-      - name: Commit
+      - name: Commit source change
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet -- artifacts/ner-memory-assist/src/App.tsx; then
-            echo 'No changes needed.'
+            echo 'No App.tsx change was necessary.'
             exit 0
           fi
           git add artifacts/ner-memory-assist/src/App.tsx
