@@ -1,0 +1,182 @@
+Continue the existing NER Memory Assist project.
+
+STAGE 4: INSTALLABLE PWA + ROBUST OFFLINE-FIRST FOUNDATION
+
+IMPORTANT:
+Do not rebuild the project.
+Do not remove or break Stage 1, Stage 2, or Stage 3.
+Keep all existing games, memories, medicine reminders, music, Listen & Match, multilingual UI, voice controls, adaptive engine, and caregiver dashboard working.
+
+GOAL:
+Make NER Memory Assist a proper offline-first Progressive Web App suitable for an SIH demonstration.
+
+1. PWA MANIFEST
+Add a complete installable PWA manifest:
+- App name: NER Memory Assist
+- Short name: NER Memory
+- Appropriate description
+- Standalone display mode
+- Mobile-friendly theme/background configuration
+- App icons if suitable assets already exist
+- Do not use copyrighted logos/assets
+
+2. SERVICE WORKER
+Implement a production-safe service worker using the existing Vite/React setup.
+
+Cache the application shell and required static assets so that:
+- App can reopen without internet
+- Existing main screens remain accessible offline
+- Previously loaded game content remains usable
+- Medicine schedules remain accessible offline
+- Music/demo audio remains usable offline
+- Memory profiles remain accessible offline
+- Existing local game results remain accessible offline
+
+Do not cache sensitive remote data publicly.
+
+3. OFFLINE-FIRST DATA
+Keep existing local persistence.
+
+If localStorage is currently being used for important structured data, introduce IndexedDB/Dexie where practical for:
+- Medicine schedules
+- Medicine history
+- Memory profiles
+- Voice-note references/recordings
+- Game results
+- Music preferences
+- Listen & Match results
+- Adaptive-performance data
+
+Do not unnecessarily rewrite working features.
+
+4. ONLINE/OFFLINE STATUS
+Add a clear elderly-friendly online/offline indicator.
+
+Example:
+- Online
+- Offline — data saved on this device
+
+The indicator should not block normal app usage.
+
+5. SYNC QUEUE ARCHITECTURE
+Create a lightweight sync abstraction for future server synchronization.
+
+Each syncable record should conceptually support:
+- local ID
+- record type
+- created/updated timestamp
+- device ID
+- sync status
+- version where appropriate
+
+Statuses:
+PENDING
+SYNCING
+SYNCED
+CONFLICT
+
+When offline:
+- Save locally
+- Add changes to pending queue
+- Never block the user
+
+When internet returns:
+- Process the queue through a SyncService abstraction.
+
+For this stage, a real cloud backend is NOT required.
+Create clean interfaces so a FastAPI/PostgreSQL backend can be connected later.
+
+6. CONFLICT SAFETY
+Do not silently overwrite important caregiver data.
+
+For future sync, prepare conflict handling based on:
+- record version
+- updated timestamp
+- device ID
+
+For this prototype, show a simple conflict status/resolution placeholder rather than implementing complicated distributed synchronization.
+
+7. MEDICINE REMINDER OFFLINE BEHAVIOR
+Verify that scheduled medicine reminders continue to work while offline using the existing local scheduling logic.
+
+If browser notifications cannot run because of browser restrictions:
+- Keep the existing in-app reminder fallback.
+- Clearly explain the limitation in settings/help.
+
+Do not introduce any paid notification API.
+
+8. MULTILINGUAL OFFLINE UI
+Verify language switching still works offline for:
+English
+Tamil
+Hindi
+Assamese
+Bengali
+Bodo
+Meitei/Manipuri
+Khasi
+Mizo
+Nepali
+
+Do not translate caregiver-entered medicine names or instructions automatically.
+
+9. VOICE
+Keep the existing voice architecture.
+
+Do not claim that all ten languages have offline speech recognition.
+Use browser/device support and the existing fallback behavior.
+
+10. SECURITY AND PRIVACY
+Do not expose personal memory photos, recordings, medicine data, or caregiver data through public cache entries.
+
+Keep personal data local unless the existing application explicitly sends it to a backend.
+
+Add or preserve clear privacy wording:
+- Personal memories are caregiver-controlled.
+- Data is stored locally on this device in the prototype.
+- Future synchronization will require secure authenticated storage.
+
+11. INSTALL EXPERIENCE
+Add a simple install prompt/help section for supported browsers.
+
+Make the app comfortable for:
+- Android phone
+- tablet
+- desktop browser
+
+12. ACCESSIBILITY
+Verify:
+- Large buttons
+- Large readable text
+- High contrast
+- Keyboard accessibility
+- Touch-friendly controls
+- Simple navigation
+- Voice-ready interface
+
+13. VERIFICATION
+After implementation:
+- Run TypeScript typecheck
+- Run production build
+- Fix all errors
+- Verify PWA manifest
+- Verify service worker registration
+- Verify offline app shell
+- Verify Online/Offline indicator
+- Verify Games
+- Verify Memories
+- Verify Medicine
+- Verify Music
+- Verify Listen & Match
+- Verify Caregiver dashboard
+- Verify language switching
+- Verify local persistence
+- Verify no browser console errors
+
+Do NOT publish automatically.
+
+At the end, provide:
+1. What was implemented
+2. Files/components changed
+3. What was tested
+4. Genuine remaining limitations

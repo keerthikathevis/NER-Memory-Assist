@@ -1,6 +1,8 @@
 import type { GameResult } from './adaptive-engine';
 import { demoMemoryProfiles } from './game-data';
 import { defaultMedicineSchedules, type MedicineEvent, type MedicineSchedule } from './medicine';
+import { clearMirroredRecords, mirrorRecord } from './indexed-db';
+import { queueChange } from './sync-service';
 
 export type MemoryProfile = {
   id: string;
@@ -25,6 +27,17 @@ export const readStore = <T,>(key: string, fallback: T): T => {
 export const writeStore = (key: string, value: unknown) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    const syncTypes: Record<string, string> = {
+      'ner-medicine-schedules': 'medicine-schedules',
+      'ner-medicine-events': 'medicine-events',
+      'ner-memory-profiles': 'memory-profiles',
+      'ner-game-results': 'game-results',
+      'ner-music-favorites': 'music-preferences',
+      'ner-music-volume': 'music-preferences',
+    };
+    const recordType = syncTypes[key];
+    if (recordType) queueChange(recordType, value, key);
+    if (recordType) void mirrorRecord(key, value);
   } catch {
     // Local-first data is best effort when storage is unavailable or full.
   }
@@ -57,4 +70,9 @@ export const clearMedicineData = () => {
   if (typeof localStorage === 'undefined') return;
   localStorage.removeItem('ner-medicine-schedules');
   localStorage.removeItem('ner-medicine-events');
+  void clearMirroredRecords();
+};
+
+export const clearLocalDataMirror = () => {
+  void clearMirroredRecords();
 };

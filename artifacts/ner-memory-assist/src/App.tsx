@@ -4,7 +4,7 @@ import {
   Activity, ArrowLeft, Bell, BellRing, BookOpen, Brain, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3,
   CloudOff, Flower2, Gamepad2, Heart, Home as HomeIcon, Languages, Lightbulb, LockKeyhole,
   Menu, Mic, Music2, Pause, Pencil, Play, Plus, RotateCcw, Settings as SettingsIcon,
-  ShieldAlert, ShieldCheck, Sparkles, Square, Star, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume1, Volume2,
+  Download, ShieldAlert, ShieldCheck, Sparkles, Square, Star, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume1, Volume2,
   Wifi, X, type LucideIcon,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
@@ -18,7 +18,8 @@ import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type 
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
 import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
-import { clearMedicineData, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type MemoryProfile, writeStore } from '@/lib/storage';
+import { clearLocalDataMirror, clearMedicineData, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type MemoryProfile, writeStore } from '@/lib/storage';
+import { clearSyncQueue, getSyncQueue, resolveSyncConflict, syncService, type SyncRecord } from '@/lib/sync-service';
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,13 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
+  useEffect(() => {
+    const processQueue = () => { if (navigator.onLine) void syncService.processQueue(); };
+    processQueue();
+    window.addEventListener('online', processQueue);
+    return () => window.removeEventListener('online', processQueue);
   }, []);
 
   const nav: [string, CopyKey, LucideIcon][] = [
@@ -152,7 +160,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
           </div>
           <div className="flex items-center gap-2">
             <div className={`hidden items-center gap-2 rounded-full px-3 py-2 text-xs sm:flex ${offline ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--primary)/.12)]'}`}>
-              {offline ? <CloudOff size={15} /> : <Wifi size={15} />}<span>{offline ? translate('offline') : translate('savedOnDevice')}</span>
+              {offline ? <CloudOff size={15} /> : <Wifi size={15} />}<span>{offline ? translate('offlineDataSaved') : translate('online')}</span>
             </div>
             <button className={`flex min-h-12 min-w-12 items-center justify-center rounded-full ${listening ? 'bg-[hsl(var(--accent))] text-white' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'}`} data-testid="button-voice" onClick={speak} title={translate('voice')}><Mic size={22} /></button>
           </div>
