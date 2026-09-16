@@ -1,0 +1,290 @@
+Continue the existing NER Memory Assist project.
+
+STAGE 3: SMART MEDICINE REMINDERS + MUSIC & EMOTIONAL ENGAGEMENT
+
+IMPORTANT:
+Do not rebuild the project.
+Do not remove or break Stage 1 or Stage 2.
+Keep all existing routes, games, multilingual architecture, memory profiles, adaptive engine and caregiver flows working.
+
+==================================================
+A. SMART MEDICINE REMINDER SYSTEM
+==================================================
+
+Create a complete caregiver-configured medicine reminder system.
+
+CAREgiver can create a medicine schedule containing:
+
+- Medicine name
+- Medicine photo
+- Dosage/instruction text entered by caregiver
+- Time
+- Frequency
+- Start date
+- End date
+- Optional voice instruction
+- Active/inactive status
+
+IMPORTANT SAFETY:
+The application must NOT identify an unknown medicine from an image.
+The application must NOT recommend, change or calculate medication dosage.
+The application only displays information entered by the caregiver/authorized healthcare professional.
+
+PATIENT MEDICINE SCREEN:
+
+Show one medicine at a time in a very simple elderly-friendly layout:
+
+- Large medicine photo
+- Large medicine name
+- Scheduled time
+- Caregiver-provided instruction
+- Taken button
+- Remind Me Later button
+
+Use clear positive confirmation after Taken.
+
+MEDICINE HISTORY:
+
+Record:
+- scheduled
+- taken
+- delayed
+- missed
+
+Show date and time for each event.
+
+CAREGIVER DASHBOARD:
+
+Show:
+- Today's medicines
+- Taken
+- Pending
+- Missed
+- Recent adherence history
+
+If a medicine reminder is repeatedly missed, create a caregiver alert/status item.
+
+Do not present this as an emergency medical alert.
+
+==================================================
+B. LOCAL OFFLINE REMINDERS
+==================================================
+
+Make medicine schedules and medicine history work locally/offline.
+
+Use the existing local-first architecture.
+
+Implement browser notification support where available.
+
+Create a notification service abstraction so the application can later support native Android/iOS notifications.
+
+Notification content must use the currently selected application language.
+
+Example structure:
+
+Medicine reminder
+Medicine name
+Scheduled time
+Taken
+Remind Me Later
+
+Do not require a paid notification API.
+
+If browser notification permission is unavailable, show a clear in-app reminder fallback.
+
+==================================================
+C. MULTILINGUAL MEDICINE UI
+==================================================
+
+Use the existing translation system.
+
+Medicine-related interface text must support:
+
+English
+Tamil
+Hindi
+Assamese
+Bengali
+Bodo
+Meitei/Manipuri
+Khasi
+Mizo
+Nepali
+
+The medicine NAME and caregiver-entered instructions must remain exactly as entered unless the caregiver explicitly enters a translated version.
+
+Translate the application UI, not medical information automatically.
+
+==================================================
+D. MUSIC & EMOTIONAL ENGAGEMENT
+==================================================
+
+Create a complete elderly-friendly Music screen.
+
+Features:
+
+- Large Play button
+- Pause
+- Next
+- Previous
+- Stop
+- Repeat
+- Volume
+- Favorites
+- Playlist
+
+Create categories:
+
+- My Favorites
+- Calm
+- Memories
+- Regional / NER
+- Instrumental
+
+Create a demo playlist using only placeholder or properly licensed/public-domain/team-created audio.
+
+Do NOT include copyrighted commercial songs.
+
+==================================================
+E. NER CULTURAL MUSIC STRUCTURE
+==================================================
+
+Create a data architecture for culturally familiar NER audio.
+
+Include example categories such as:
+
+- Assamese folk
+- Bihu-related instrumental/demo audio
+- Manipuri cultural music
+- Khasi cultural music
+- Mizo cultural music
+- Bengali regional music
+- Nature sounds
+- Traditional instruments
+
+Use demo/placeholder audio where actual licensed audio is unavailable.
+
+Clearly separate demo assets from real licensed content.
+
+==================================================
+F. VOICE CONTROL FOR MUSIC
+==================================================
+
+Connect Music to the existing global voice-command architecture.
+
+Support:
+
+Play
+Pause
+Next
+Previous
+Stop
+Repeat
+Volume up
+Volume down
+Play favorites
+Open music
+Go Home
+
+Commands should use the selected language where browser/device speech recognition supports it.
+
+Do not claim every language has offline speech recognition.
+
+==================================================
+G. MUSIC COGNITIVE ENGAGEMENT
+==================================================
+
+Create a simple working activity called:
+
+“Listen & Match”
+
+Flow:
+
+1. Play a short demo audio clip.
+2. Show 3 large visual choices.
+3. Patient chooses the matching category/image.
+4. Record:
+   - correct/incorrect
+   - attempts
+   - response time
+   - score
+5. Show positive feedback.
+6. Save result locally.
+7. Connect the result to the existing adaptive-engine service.
+
+Do not describe the result as a medical diagnosis.
+
+==================================================
+H. FAMILY VOICE MEMORY INTEGRATION
+==================================================
+
+Connect the existing Family Memory profiles to the music/memory experience.
+
+If a family memory profile has a voice-note reference, provide a caregiver-controlled option to play it as a memory cue.
+
+Do not automatically translate or modify the original family voice recording.
+
+Keep all personal recordings local in the prototype.
+
+==================================================
+I. CAREGIVER DASHBOARD
+==================================================
+
+Add sections for:
+
+MEDICINE:
+- today's schedule
+- taken
+- pending
+- missed
+
+MUSIC:
+- music activities completed
+- recent Listen & Match scores
+
+MEMORIES:
+- active memory profiles
+
+GAMES:
+- recent game activity
+
+Keep all information non-diagnostic.
+
+==================================================
+J. ACCESSIBILITY
+==================================================
+
+All new screens must follow the existing elderly-friendly design:
+
+- very large controls
+- large readable text
+- high contrast
+- simple navigation
+- minimal text
+- touch-friendly
+- keyboard accessible
+- voice-ready
+
+==================================================
+K. VERIFICATION
+==================================================
+
+After implementation:
+
+1. Run TypeScript typecheck.
+2. Run production build.
+3. Fix all build/type errors.
+4. Verify Patient route.
+5. Verify Caregiver route.
+6. Verify Medicine route.
+7. Verify Music route.
+8. Verify existing four games still work.
+9. Verify language switching still works.
+10. Verify medicine records persist locally.
+11. Verify game/music results persist locally.
+12. Verify notification permission fallback works.
+13. Verify no paid API is required.
+
+Do not publish automatically.
+
+At the end, give a concise implementation summary and list only genuine remaining limitations.
