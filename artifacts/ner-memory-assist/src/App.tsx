@@ -16,6 +16,7 @@ import { demoAudio } from '@/lib/demo-audio';
 import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';
 import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
+import { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/offline-voice';
 import { getSpeechRecognitionLocale } from '@/lib/voiceLocales';
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
 import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
@@ -53,6 +54,7 @@ type SpeechRecognitionLike = {
   onend: (() => void) | null;
   onerror: ((event?: unknown) => void) | null;
   onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  processLocally?: boolean;
 };
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
