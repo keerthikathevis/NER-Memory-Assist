@@ -1,4 +1,5 @@
-import { languageOptions, type Lang } from './i18n';
+import type { Lang } from './i18n';
+import { getSpeechRecognitionLocale } from './voiceLocales';
 
 function languagePrefix(locale: string): string {
   return locale.toLowerCase().split('-')[0];
@@ -6,8 +7,10 @@ function languagePrefix(locale: string): string {
 
 function findMatchingVoice(locale: string): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis.getVoices();
+  const normalized = locale.toLowerCase();
   const prefix = languagePrefix(locale);
-  return voices.find((voice) => voice.lang.toLowerCase() === locale.toLowerCase())
+
+  return voices.find((voice) => voice.lang.toLowerCase() === normalized)
     ?? voices.find((voice) => languagePrefix(voice.lang) === prefix);
 }
 
@@ -16,7 +19,7 @@ function speakNow(text: string, locale: string): boolean {
   const matchingVoice = findMatchingVoice(locale);
   const prefix = languagePrefix(locale);
 
-  // Never silently read non-English text with an unrelated English voice.
+  // Never silently use an unrelated English voice for a non-English language.
   if (!matchingVoice && prefix !== 'en') return false;
 
   const utterance = new SpeechSynthesisUtterance(text);
@@ -30,22 +33,25 @@ function speakNow(text: string, locale: string): boolean {
 }
 
 /**
- * Speak using the selected language when the browser/device provides a
- * matching voice. Some browsers populate their voice list asynchronously,
- * so we retry once after the voiceschanged event.
+ * Speak in the currently selected language. The locale comes from the same
+ * language map used by speech recognition, so output cannot silently fall
+ * back to an unrelated language. Browser/device voice availability still
+ * determines which languages can actually be spoken.
  */
 export function speakText(text: string, lang: Lang): boolean {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
   const cleanText = text.trim();
   if (!cleanText) return false;
 
-  const speechLocale = languageOptions.find((item) => item.id === lang)?.speechLocale ?? 'en-IN';
+  const speechLocale = getSpeechRecognitionLocale(lang);
   const synthesis = window.speechSynthesis;
 
   try {
     synthesis.cancel();
+
     if (speakNow(cleanText, speechLocale)) return true;
 
+    // Some browsers populate voices asynchronously after page load.
     let handled = false;
     const retry = () => {
       if (handled) return;
@@ -64,7 +70,8 @@ export function speakText(text: string, lang: Lang): boolean {
         handled = true;
         synthesis.removeEventListener('voiceschanged', retry);
       }
-    }, 1500);
+    }, 2500);
+
     return false;
   } catch {
     return false;
