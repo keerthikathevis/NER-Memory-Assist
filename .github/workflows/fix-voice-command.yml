@@ -1,6 +1,8 @@
 name: Fix multilingual voice command routing
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -31,34 +33,15 @@ jobs:
           from pathlib import Path
           p = Path('src/App.tsx')
           s = p.read_text(encoding='utf-8')
-
-          s = s.replace(
-              "import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';",
-              "import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';\nimport { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';"
-          )
-
-          s = s.replace(
-              "const canonical = resolveVoiceCommand(lang, command);",
-              "const canonical = resolveMultilingualVoiceCommand(lang, command);"
-          )
-
-          old = """    const navigation: Record<string, string> = {\n      'go home': '/patient', home: '/patient', 'open games': '/games', games: '/games',\n      'open medicine': '/medicine', medicine: '/medicine', 'open memories': '/memories', memories: '/memories',\n      'open music': '/music', music: '/music', 'show progress': '/progress', progress: '/progress',\n      settings: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];"""
-          new = """    const navigation: Record<string, string> = {\n      'go home': '/patient', home: '/patient', 'open games': '/games', games: '/games',\n      'open medicine': '/medicine', medicine: '/medicine', 'open memories': '/memories', memories: '/memories',\n      'open music': '/music', music: '/music', 'show progress': '/progress', progress: '/progress',\n      settings: '/settings',\n      HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n      OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];"""
+          s = s.replace("import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';", "import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';\nimport { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';")
+          s = s.replace("const canonical = resolveVoiceCommand(lang, command);", "const canonical = resolveMultilingualVoiceCommand(lang, command);")
+          s = s.replace("      settings: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];", "      settings: '/settings',\n      HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n      OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];")
+          s = s.replace("const canonical = resolveVoiceCommand(lang, transcript);", "const canonical = resolveMultilingualVoiceCommand(lang, transcript);")
+          old = "      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;"
+          new = "      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const canonicalRoute: Record<string, string> = {\n        HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n        OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n      };\n      const response = canonical\n        ? translate(titleKey[canonicalRoute[canonical] ?? canonical] ?? 'home')\n        : transcript;"
           if old not in s:
-              raise SystemExit('navigation block not found')
-          s = s.replace(old, new, 1)
-
-          s = s.replace(
-              "const canonical = resolveVoiceCommand(lang, transcript);",
-              "const canonical = resolveMultilingualVoiceCommand(lang, transcript);"
-          )
-
-          old_response = """      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;"""
-          new_response = """      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const canonicalRoute: Record<string, string> = {\n        HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n        OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n      };\n      const response = canonical\n        ? translate(titleKey[canonicalRoute[canonical] ?? canonical] ?? 'home')\n        : transcript;"""
-          if old_response not in s:
               raise SystemExit('response block not found')
-          s = s.replace(old_response, new_response, 1)
-
+          s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
 
       - name: Install dependencies
