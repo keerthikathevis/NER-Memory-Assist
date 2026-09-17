@@ -1,44 +1,45 @@
-export type OfflineVoiceRecognition = {
-  available: boolean;
-  processLocally: boolean;
-  install?: () => Promise<void>;
+export type OfflineVoiceStatus = 'ready' | 'downloaded' | 'unavailable' | 'unsupported' | 'failed';
+
+type AvailabilityResult = 'available' | 'downloadable' | 'downloading' | 'unavailable';
+type SpeechRecognitionStatic = {
+  available?: (options: { langs: string[]; processLocally: boolean }) => Promise<AvailabilityResult>;
+  install?: (options: { langs: string[]; processLocally?: boolean }) => Promise<boolean>;
 };
 
-/**
- * Detects the experimental Web Speech on-device recognition capability.
- * Browsers that expose SpeechRecognition.available/install can optionally
- * download a language pack and then process recognition locally.
- */
-export function getOfflineVoiceCapability(): OfflineVoiceRecognition {
-  if (typeof window === 'undefined') return { available: false, processLocally: false };
-
+function getSpeechRecognitionStatic(): SpeechRecognitionStatic | undefined {
+  if (typeof window === 'undefined') return undefined;
   const browser = window as unknown as {
-    SpeechRecognition?: { available?: () => Promise<boolean>; install?: (options: { langs: string[] }) => Promise<boolean> };
-    webkitSpeechRecognition?: { available?: () => Promise<boolean>; install?: (options: { langs: string[] }) => Promise<boolean> };
+    SpeechRecognition?: SpeechRecognitionStatic;
+    webkitSpeechRecognition?: SpeechRecognitionStatic;
   };
-
-  const api = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
-  return {
-    available: typeof api?.available === 'function',
-    processLocally: typeof api?.install === 'function',
-    install: typeof api?.install === 'function' ? undefined : undefined,
-  };
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
 }
 
-export async function ensureOfflineVoiceLanguage(locale: string): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-
-  const browser = window as unknown as {
-    SpeechRecognition?: { available?: () => Promise<boolean>; install?: (options: { langs: string[] }) => Promise<boolean> };
-    webkitSpeechRecognition?: { available?: () => Promise<boolean>; install?: (options: { langs: string[] }) => Promise<boolean> };
-  };
-  const api = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
-  if (!api?.install) return false;
+/**
+ * Prepare on-device recognition for one BCP-47 locale.
+ * Language-pack APIs are experimental, so callers must keep an online/browser fallback.
+ */
+export async function prepareOfflineVoiceLanguage(locale: string): Promise<OfflineVoiceStatus> {
+  const api = getSpeechRecognitionStatic();
+  if (!api?.available) return 'unsupported';
 
   try {
-    const installed = await api.install({ langs: [locale] });
-    return installed !== false;
+    const availability = await api.available({ langs: [locale], processLocally: true });
+    if (availability === 'available') return 'ready';
+    if (availability === 'unavailable') return 'unavailable';
+
+    // Downloading a missing language pack requires connectivity.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return 'unavailable';
+    if (!api.install) return 'unsupported';
+
+    const installed = await api.install({ langs: [locale], processLocally: true });
+    return installed ? 'downloaded' : 'failed';
   } catch {
-    return false;
+    return 'failed';
   }
+}
+
+export function hasOfflineVoiceApi(): boolean {
+  const api = getSpeechRecognitionStatic();
+  return Boolean(api?.available);
 }
