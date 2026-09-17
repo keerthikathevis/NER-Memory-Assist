@@ -13,7 +13,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { adaptDifficulty, scoreGame, type Difficulty, type GameResult } from '@/lib/adaptive-engine';
 import { demoAudio } from '@/lib/demo-audio';
-import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';
+import { culturalItems, type CulturalItem } from '@/lib/game-data';
 import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
 import { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/offline-voice';
@@ -328,7 +328,7 @@ function JigsawGame({ lang, gameType }: { lang: Lang; gameType: 'personalized-ji
   const pieceCount = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 6 : 9;
   const culturalItem = culturalItems[0];
   const personalProfiles = getMemoryProfiles();
-  const personalProfile = personalProfiles[0] ?? demoMemoryProfiles[0];
+  const personalProfile = personalProfiles[0];
   const puzzleImage = cultural ? culturalItem.imageDataUrl : personalProfile.photoDataUrl;
   const puzzleCols = pieceCount === 4 ? 2 : 3;
   const puzzleRows = pieceCount === 4 ? 2 : pieceCount === 6 ? 2 : 3;
@@ -405,10 +405,9 @@ function MatchGame({ lang, gameType }: { lang: Lang; gameType: 'family-match' | 
   const [feedback, setFeedback] = useState<'correct' | 'tryAgain' | null>(null);
   const [hinted, setHinted] = useState(false);
   const [result, setResult] = useState<GameResult | null>(null);
-  const storedProfiles = getMemoryProfiles();
-  const profiles = storedProfiles.length ? storedProfiles : demoMemoryProfiles;
+  const profiles = getMemoryProfiles();
   const roundTarget = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 5 : 7;
-  const currentProfile = profiles[round % Math.max(profiles.length, 1)] ?? demoMemoryProfiles[0];
+  const currentProfile = profiles[round % Math.max(profiles.length, 1)];
   const currentCulture = culturalItems[round % culturalItems.length];
   const modes: MatchMode[] = cultural ? ['landmark', 'animal', 'object', 'food'] : ['photoToPerson', 'photoToName', 'photoToRelationship'];
   const options = cultural
