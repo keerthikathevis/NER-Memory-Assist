@@ -1,0 +1,110 @@
+name: Fix core demo bugs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-core-demo-bugs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: ${{ !contains(github.event.head_commit.message, '[core-demo-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch game images, medicine reminders, and dashboard status
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('artifacts/ner-memory-assist/src/App.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = []
+
+          replacements.append((
+          """  const pieceCount = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 6 : 9;\n  const culturalItem = culturalItems[0];""",
+          """  const pieceCount = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 6 : 9;\n  const culturalItem = culturalItems[0];\n  const personalProfiles = getMemoryProfiles();\n  const personalProfile = personalProfiles[0] ?? demoMemoryProfiles[0];\n  const puzzleImage = cultural ? culturalItem.imageDataUrl : personalProfile.photoDataUrl;\n  const puzzleCols = pieceCount === 4 ? 2 : 3;\n  const puzzleRows = pieceCount === 4 ? 2 : pieceCount === 6 ? 2 : 3;\n  const pieceStyle = (piece: number) => ({\n    backgroundImage: `url(${puzzleImage})`,\n    backgroundSize: `${puzzleCols * 100}% ${puzzleRows * 100}%`,\n    backgroundPosition: `${(piece % puzzleCols) * (100 / Math.max(puzzleCols - 1, 1))}% ${Math.floor(piece / puzzleCols) * (100 / Math.max(puzzleRows - 1, 1))}%`,\n    backgroundRepeat: 'no-repeat',\n  });"""))
+
+          replacements.append((
+          """<div className={`cultural-scene ${colors[culturalItem.color]} relative flex min-h-40 items-center justify-center overflow-hidden rounded-2xl`}><div className=\"absolute bottom-0 h-1/2 w-full bg-[hsl(171_38%_26%/.5)]\" /><div className=\"relative text-center\"><div className=\"mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/60 text-4xl font-bold text-[hsl(var(--primary))]\">{culturalItem.symbol}</div><p className=\"mt-3 font-bold\">{cultural ? culturalItem.detail : translate('rememberPlace')}</p></div></div>""",
+          """<div className={`cultural-scene ${colors[culturalItem.color]} relative min-h-40 overflow-hidden rounded-2xl`}>{puzzleImage ? <img src={puzzleImage} alt={cultural ? culturalItem.titleKey : personalProfile.name} className=\"absolute inset-0 h-full w-full object-cover\" /> : null}<div className=\"absolute inset-x-0 bottom-0 bg-black/45 p-4 text-center text-white\"><p className=\"font-bold\">{cultural ? culturalItem.detail : personalProfile.name}</p></div></div>"""))
+
+          replacements.append((
+          """{piece === null ? '?' : <span className=\"cultural-tile h-full w-full rounded-lg\" data-piece={piece}>{piece + 1}</span>}""",
+          """{piece === null ? '?' : <span className=\"cultural-tile h-full w-full rounded-lg\" data-piece={piece} style={pieceStyle(piece)}><span className=\"sr-only\">{piece + 1}</span></span>}"""))
+
+          replacements.append((
+          """className={`flex h-20 w-20 touch-none items-center justify-center rounded-2xl border-2 bg-[hsl(var(--card))] text-xl font-bold shadow-sm ${selectedPiece === piece ? 'border-[hsl(var(--accent))] ring-4 ring-[hsl(var(--accent)/.25)]' : 'border-[hsl(var(--border))]'}`}>{piece + 1}</button>""",
+          """className={`flex h-20 w-20 touch-none items-center justify-center overflow-hidden rounded-2xl border-2 bg-[hsl(var(--card))] text-xl font-bold shadow-sm ${selectedPiece === piece ? 'border-[hsl(var(--accent))] ring-4 ring-[hsl(var(--accent)/.25)]' : 'border-[hsl(var(--border))]'}`} style={pieceStyle(piece)}><span className=\"sr-only\">{piece + 1}</span></button>"""))
+
+          replacements.append((
+          """  const profiles = getMemoryProfiles();\n  const roundTarget = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 5 : 7;""",
+          """  const storedProfiles = getMemoryProfiles();\n  const profiles = storedProfiles.length ? storedProfiles : demoMemoryProfiles;\n  const roundTarget = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 5 : 7;"""))
+
+          replacements.append((
+          """<div className={`flex h-32 w-32 items-center justify-center rounded-full ${cultural ? colors[currentCulture.color] : 'bg-[hsl(var(--secondary))]'} text-4xl font-bold text-[hsl(var(--primary))]`}>{cultural ? currentCulture.symbol : currentProfile.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>""",
+          """<div className={`flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ${cultural ? colors[currentCulture.color] : 'bg-[hsl(var(--secondary))]'} text-4xl font-bold text-[hsl(var(--primary))]`}>{cultural ? <img src={currentCulture.imageDataUrl} alt={currentCulture.titleKey} className=\"h-full w-full object-cover\" /> : currentProfile.photoDataUrl ? <img src={currentProfile.photoDataUrl} alt={currentProfile.name} className=\"h-full w-full object-cover\" /> : currentProfile.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>"""))
+
+          replacements.append((
+          """<span className=\"flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-sm\">{cultural ? (option as CulturalItem).symbol : (option as MemoryProfile).name.charAt(0)}</span>{label}</button>""",
+          """<span className=\"flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[hsl(var(--secondary))] text-sm\">{cultural ? <img src={(option as CulturalItem).imageDataUrl} alt=\"\" className=\"h-full w-full object-cover\" /> : (option as MemoryProfile).photoDataUrl ? <img src={(option as MemoryProfile).photoDataUrl} alt=\"\" className=\"h-full w-full object-cover\" /> : (option as MemoryProfile).name.charAt(0)}</span>{label}</button>"""))
+
+          replacements.append((
+          """      if (!dayEvents.some((event) => event.status === 'scheduled')) {\n        additions.push({ id: `scheduled-${medicine.id}-${today}`, medicineId: medicine.id, status: 'scheduled', timestamp: new Date().toISOString(), scheduledFor: today });\n      }""",
+          """      if (dayEvents.length === 0) {\n        additions.push({ id: `scheduled-${medicine.id}-${today}`, medicineId: medicine.id, status: 'scheduled', timestamp: new Date().toISOString(), scheduledFor: today });\n      }"""))
+
+          replacements.append((
+          """      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;\n      todaySchedules.filter((medicine) => medicine.time === currentTime).forEach((medicine) => {\n        const key = `ner-notified-${medicine.id}-${today}`;\n        if (localStorage.getItem(key)) return;\n        const sent = sendMedicineNotification(medicine, { title: translate('notificationTitle'), scheduled: translate('scheduled'), taken: translate('taken'), later: translate('later') });\n        if (!sent) setFallbackReminder(true);\n        localStorage.setItem(key, '1');\n      });""",
+          """      todaySchedules.forEach((medicine) => {\n        const dueAt = new Date(`${today}T${medicine.time}:00`).getTime();\n        const status = latestMedicineStatus(medicine.id, events, today);\n        if (now.getTime() < dueAt || status === 'taken' || status === 'missed') return;\n        const key = `ner-notified-${medicine.id}-${today}`;\n        if (localStorage.getItem(key)) return;\n        const sent = sendMedicineNotification(medicine, { title: translate('notificationTitle'), scheduled: translate('scheduled'), taken: translate('taken'), later: translate('later') });\n        if (!sent) setFallbackReminder(true);\n        localStorage.setItem(key, '1');\n      });"""))
+
+          replacements.append((
+          """  }, [lang, today, todaySchedules]);""",
+          """  }, [lang, today, todaySchedules, events]);"""))
+
+          changed = 0
+          for old, new in replacements:
+            if old in text:
+              text = text.replace(old, new, 1)
+              changed += 1
+            elif new in text:
+              print('Already patched block')
+            else:
+              raise SystemExit(f'Expected App.tsx block not found:\n{old[:180]}')
+
+          path.write_text(text, encoding='utf-8')
+          print(f'Applied {changed} App.tsx patches')
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build app
+        run: pnpm --filter @workspace/ner-memory-assist build
+
+      - name: Commit verified fixes
+        shell: bash
+        run: |
+          if git diff --quiet -- artifacts/ner-memory-assist/src/App.tsx; then
+            echo 'No App.tsx changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add artifacts/ner-memory-assist/src/App.tsx
+          git commit -m 'Fix game images and medicine state [core-demo-fixed]'
+          git push
