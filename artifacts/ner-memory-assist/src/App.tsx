@@ -115,7 +115,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const speak = () => {
+  const speak = async () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
@@ -133,15 +133,24 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
     const recognition = new Speech();
     recognitionRef.current = recognition;
-    recognition.lang = getSpeechRecognitionLocale(lang);
+    const recognitionLocale = getSpeechRecognitionLocale(lang);
+    recognition.lang = recognitionLocale;
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    // Chromium supports local/on-device recognition on some browser versions.
-    // Only request it when explicitly available; otherwise the browser can use
-    // its normal online recognizer. This avoids falsely claiming offline support.
-    if ('processLocally' in recognition) {
-      try { recognition.processLocally = !navigator.onLine; } catch {}
+    // When offline, only force local recognition after the browser confirms
+    // that the selected language pack is installed and usable on-device.
+    if (!navigator.onLine) {
+      const offlineVoiceStatus = await prepareOfflineVoiceLanguage(recognitionLocale);
+      if (offlineVoiceStatus !== 'ready' && offlineVoiceStatus !== 'downloaded') {
+        recognitionRef.current = null;
+        setListening(false);
+        speakText(translate('micUnavailable'), lang);
+        return;
+      }
+      if ('processLocally' in recognition) {
+        try { recognition.processLocally = true; } catch {}
+      }
     }
 
     recognition.onstart = () => setListening(true);
