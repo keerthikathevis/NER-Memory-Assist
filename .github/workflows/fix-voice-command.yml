@@ -3,6 +3,9 @@ name: Fix multilingual voice command routing
 on:
   push:
     branches: [main]
+    paths:
+      - 'artifacts/ner-memory-assist/src/App.tsx'
+      - '.github/workflows/fix-voice-command.yml'
   workflow_dispatch:
 
 permissions:
@@ -11,9 +14,6 @@ permissions:
 jobs:
   patch-and-verify:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: artifacts/ner-memory-assist
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,41 +24,47 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: artifacts/ner-memory-assist/package-lock.json
 
-      - name: Patch App voice routing
+      - name: Patch multilingual voice routing
         shell: python
         run: |
           from pathlib import Path
-          p = Path('src/App.tsx')
+          p = Path('artifacts/ner-memory-assist/src/App.tsx')
           s = p.read_text(encoding='utf-8')
-          s = s.replace("import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';", "import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';\nimport { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';")
-          s = s.replace("const canonical = resolveVoiceCommand(lang, command);", "const canonical = resolveMultilingualVoiceCommand(lang, command);")
-          s = s.replace("      settings: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];", "      settings: '/settings',\n      HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n      OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];")
-          s = s.replace("const canonical = resolveVoiceCommand(lang, transcript);", "const canonical = resolveMultilingualVoiceCommand(lang, transcript);")
-          old = "      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;"
-          new = "      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const canonicalRoute: Record<string, string> = {\n        HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n        OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n      };\n      const response = canonical\n        ? translate(titleKey[canonicalRoute[canonical] ?? canonical] ?? 'home')\n        : transcript;"
-          if old not in s:
-              raise SystemExit('response block not found')
-          s = s.replace(old, new, 1)
+          old_import = "import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';"
+          if old_import in s:
+              s = s.replace(old_import, "import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';\nimport { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';", 1)
+          elif "import { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';" not in s:
+              raise SystemExit('voice command import not found')
+          s = s.replace('resolveVoiceCommand(lang, command)', 'resolveMultilingualVoiceCommand(lang, command)')
+          s = s.replace('resolveVoiceCommand(lang, transcript)', 'resolveMultilingualVoiceCommand(lang, transcript)')
+          marker = "      settings: '/settings',\n    };"
+          additions = "      settings: '/settings',\n      HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n      OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n    };"
+          if marker in s and 'OPEN_GAMES' not in s:
+              s = s.replace(marker, additions, 1)
+          old_response = "      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;"
+          new_response = "      const canonicalRoute: Record<string, string> = { HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine', OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings' };\n      const response = canonical ? translate(titleKey[canonicalRoute[canonical] ?? canonical] ?? 'home') : transcript;"
+          if old_response in s:
+              s = s.replace(old_response, new_response, 1)
           p.write_text(s, encoding='utf-8')
 
       - name: Install dependencies
+        working-directory: artifacts/ner-memory-assist
         run: npm ci
 
       - name: Build verification
+        working-directory: artifacts/ner-memory-assist
         run: npm run build
 
-      - name: Commit and push
+      - name: Commit source patch
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/App.tsx
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add artifacts/ner-memory-assist/src/App.tsx
           if git diff --cached --quiet; then
-            echo "No changes to commit"
+            echo 'No source changes needed.'
           else
-            git commit -m "Fix multilingual voice command routing"
+            git commit -m 'Fix Tamil and multilingual voice command routing'
             git push
           fi
