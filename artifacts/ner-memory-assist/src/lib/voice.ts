@@ -17,11 +17,10 @@ function findMatchingVoice(locale: string): SpeechSynthesisVoice | undefined {
 function speakNow(text: string, locale: string): boolean {
   const synthesis = window.speechSynthesis;
   const matchingVoice = findMatchingVoice(locale);
-  const prefix = languagePrefix(locale);
 
-  // Never silently use an unrelated English voice for a non-English language.
-  if (!matchingVoice && prefix !== 'en') return false;
-
+  // Let the browser choose a voice for the requested locale when an exact
+  // installed voice is not exposed. Refusing here made Tamil/Hindi silently
+  // fail on devices where the browser can still route the locale correctly.
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = matchingVoice?.lang ?? locale;
   if (matchingVoice) utterance.voice = matchingVoice;
@@ -32,12 +31,7 @@ function speakNow(text: string, locale: string): boolean {
   return true;
 }
 
-/**
- * Speak in the currently selected language. The locale comes from the same
- * language map used by speech recognition, so output cannot silently fall
- * back to an unrelated language. Browser/device voice availability still
- * determines which languages can actually be spoken.
- */
+/** Speak using the currently selected language/locale. */
 export function speakText(text: string, lang: Lang): boolean {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
   const cleanText = text.trim();
@@ -51,13 +45,10 @@ export function speakText(text: string, lang: Lang): boolean {
 
     if (speakNow(cleanText, speechLocale)) return true;
 
-    // Some browsers populate voices asynchronously after page load.
-    let handled = false;
     const retry = () => {
-      if (handled) return;
-      handled = true;
       synthesis.removeEventListener('voiceschanged', retry);
       try {
+        synthesis.cancel();
         speakNow(cleanText, speechLocale);
       } catch {
         // Ignore browser-specific synthesis errors.
@@ -65,14 +56,8 @@ export function speakText(text: string, lang: Lang): boolean {
     };
 
     synthesis.addEventListener('voiceschanged', retry, { once: true });
-    window.setTimeout(() => {
-      if (!handled) {
-        handled = true;
-        synthesis.removeEventListener('voiceschanged', retry);
-      }
-    }, 2500);
-
-    return false;
+    window.setTimeout(() => synthesis.removeEventListener('voiceschanged', retry), 2500);
+    return true;
   } catch {
     return false;
   }
