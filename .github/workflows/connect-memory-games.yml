@@ -1,0 +1,41 @@
+name: Connect games to personal memories
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'Connect games to personal memories') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch App source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('artifacts/ner-memory-assist/src/App.tsx')
+          s=p.read_text()
+          s=s.replace("import { culturalItems, demoMemoryProfiles, type CulturalItem } from '@/lib/game-data';", "import { culturalItems, type CulturalItem } from '@/lib/game-data';")
+          s=s.replace("const personalProfiles = getMemoryProfiles();\n  const personalProfile = personalProfiles[0] ?? demoMemoryProfiles[0];", "const personalProfiles = getMemoryProfiles();\n  const personalProfile = personalProfiles[0];")
+          s=s.replace("const storedProfiles = getMemoryProfiles();\n  const profiles = storedProfiles.length ? storedProfiles : demoMemoryProfiles;", "const profiles = getMemoryProfiles();")
+          s=s.replace("const currentProfile = profiles[round % Math.max(profiles.length, 1)] ?? demoMemoryProfiles[0];", "const currentProfile = profiles[round % Math.max(profiles.length, 1)];")
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add artifacts/ner-memory-assist/src/App.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'Connect games to personal memories'
+          git push
+      - name: Remove temporary workflow
+        run: |
+          rm -f .github/workflows/connect-memory-games.yml
+          git add .github/workflows/connect-memory-games.yml
+          git commit -m 'Remove temporary memory game patch workflow' || true
+          git push || true
