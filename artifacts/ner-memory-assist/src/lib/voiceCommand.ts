@@ -6,7 +6,11 @@ const commandAliases: Record<Lang, Record<string, string>> = {
   hi: { 'मदद':'HELP', 'दोहराएं':'REPEAT', 'शुरू':'START', 'रोकें':'PAUSE', 'बंद':'STOP', 'जारी':'CONTINUE', 'होम':'HOME', 'आसान':'EASIER', 'कठिन':'HARDER', 'गेम':'OPEN_GAMES', 'दवा':'OPEN_MEDICINE', 'संगीत':'OPEN_MUSIC', 'यादें':'OPEN_MEMORIES', 'प्रगति':'OPEN_PROGRESS', 'सेटिंग्स':'OPEN_SETTINGS' },
   as: { 'সহায়':'HELP', 'সহায়তা':'HELP', 'পুনৰাবৃত্তি':'REPEAT', 'আৰম্ভ':'START', 'ৰখাওক':'PAUSE', 'বন্ধ':'STOP', 'আগবাঢ়ক':'CONTINUE', 'ঘৰ':'HOME', 'সহজ':'EASIER', 'কঠিন':'HARDER', 'খেল':'OPEN_GAMES', 'ঔষধ':'OPEN_MEDICINE', 'সংগীত':'OPEN_MUSIC', 'স্মৃতি':'OPEN_MEMORIES', 'অগ্ৰগতি':'OPEN_PROGRESS', 'ছেটিংছ':'OPEN_SETTINGS' },
   bn: { 'সাহায্য':'HELP', 'আবার':'REPEAT', 'শুরু':'START', 'বিরতি':'PAUSE', 'থামুন':'STOP', 'চালিয়ে':'CONTINUE', 'হোম':'HOME', 'সহজ':'EASIER', 'কঠিন':'HARDER', 'খেলা':'OPEN_GAMES', 'ওষুধ':'OPEN_MEDICINE', 'সঙ্গীত':'OPEN_MUSIC', 'স্মৃতি':'OPEN_MEMORIES', 'অগ্রগতি':'OPEN_PROGRESS', 'সেটিংস':'OPEN_SETTINGS' },
-  brx: {}, mni: {}, kha: {}, lus: {}, ne: { 'मद्दत':'HELP', 'सहायता':'HELP', 'दोहोऱ्याउनुहोस्':'REPEAT', 'सुरु':'START', 'रोक्नुहोस्':'PAUSE', 'बन्द':'STOP', 'जारी':'CONTINUE', 'गृह':'HOME', 'सजिलो':'EASIER', 'गाह्रो':'HARDER', 'खेल':'OPEN_GAMES', 'औषधि':'OPEN_MEDICINE', 'संगीत':'OPEN_MUSIC', 'स्मृति':'OPEN_MEMORIES', 'प्रगति':'OPEN_PROGRESS', 'सेटिङ':'OPEN_SETTINGS' },
+  brx: { 'मदद':'HELP', 'सहायता':'HELP', 'शुरु':'START', 'बन्द':'STOP', 'खेल':'OPEN_GAMES', 'दवा':'OPEN_MEDICINE', 'संगीत':'OPEN_MUSIC', 'स्मृति':'OPEN_MEMORIES', 'प्रगति':'OPEN_PROGRESS' },
+  mni: { 'ꯑꯗꯨꯕ':'HELP', 'ꯍꯧꯖꯤꯛ':'START', 'ꯂꯩꯔꯤ':'STOP', 'ꯏꯁꯥꯏ':'OPEN_MUSIC', 'ꯁꯤꯟꯖꯤꯅꯕ':'OPEN_MEMORIES' },
+  kha: { ' jingïarap':'HELP', 'sdang':'START', 'sangeit':'OPEN_MUSIC', 'kynkynmaw':'OPEN_MEMORIES' },
+  lus: { 'tanpui':'HELP', 'tawp':'STOP', 'music':'OPEN_MUSIC', 'theihhlimna':'OPEN_MEMORIES' },
+  ne: { 'मद्दत':'HELP', 'सहायता':'HELP', 'दोहोऱ्याउनुहोस्':'REPEAT', 'सुरु':'START', 'रोक्नुहोस्':'PAUSE', 'बन्द':'STOP', 'जारी':'CONTINUE', 'गृह':'HOME', 'सजिलो':'EASIER', 'गाह्रो':'HARDER', 'खेल':'OPEN_GAMES', 'औषधि':'OPEN_MEDICINE', 'संगीत':'OPEN_MUSIC', 'स्मृति':'OPEN_MEMORIES', 'प्रगति':'OPEN_PROGRESS', 'सेटिङ':'OPEN_SETTINGS' },
 };
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase();
