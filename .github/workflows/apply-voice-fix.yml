@@ -1,0 +1,98 @@
+name: Apply multilingual voice fix
+
+'on':
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/voice-fix-trigger-2'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch voice aliases and locale handling
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          i18n = Path('artifacts/ner-memory-assist/src/lib/i18n.ts')
+          text = i18n.read_text(encoding='utf-8')
+          start = text.index('const voiceAliases:')
+          end = text.index('export const resolveVoiceCommand', start)
+          block = '''const voiceAliases: Partial<Record<Lang, Record<VoiceCommand, string[]>>> = {
+            en: { play: ['play'], pause: ['pause'], next: ['next'], previous: ['previous', 'back'], stop: ['stop'], repeat: ['repeat'], 'volume up': ['volume up', 'louder'], 'volume down': ['volume down', 'quieter'], 'play favorites': ['play favorites', 'my favorites'], 'open music': ['open music'], 'go home': ['go home', 'home'], start: ['start', 'begin'], continue: ['continue'], restart: ['restart'], hint: ['hint'], easier: ['easier'], harder: ['harder'] },
+            ta: { play: ['இயக்கு', 'பிளே'], pause: ['இடைநிறுத்து', 'பாஸ்'], next: ['அடுத்து'], previous: ['முந்தைய', 'பின்'], stop: ['நிறுத்து'], repeat: ['மீண்டும்'], 'volume up': ['ஒலியை அதிகரிக்கவும்'], 'volume down': ['ஒலியை குறைக்கவும்'], 'play favorites': ['பிடித்தவை இயக்கு'], 'open music': ['இசையைத் திற'], 'go home': ['முகப்பு'], start: ['தொடங்கு'], continue: ['தொடரவும்'], restart: ['மீண்டும் தொடங்கு'], hint: ['குறிப்பு'], easier: ['எளிதாக'], harder: ['கடினமாக'] },
+            hi: { play: ['चलाएं', 'चलाओ', 'प्ले'], pause: ['रोकें', 'पॉज़'], next: ['अगला'], previous: ['पिछला', 'वापस'], stop: ['रोकें', 'बंद करें'], repeat: ['दोहराएं'], 'volume up': ['आवाज़ बढ़ाएं'], 'volume down': ['आवाज़ कम करें'], 'play favorites': ['पसंदीदा चलाएं'], 'open music': ['संगीत खोलें'], 'go home': ['होम', 'मुख्य पृष्ठ'], start: ['शुरू', 'शुरू करें'], continue: ['जारी रखें'], restart: ['फिर शुरू'], hint: ['संकेत'], easier: ['आसान'], harder: ['कठिन'] },
+            as: { play: ['চলাও', 'চালাও'], pause: ['বিৰতি', 'থামাও'], next: ['পিছৰ', 'আগলৈ'], previous: ['পূৰ্বৱৰ্তী'], stop: ['বন্ধ কৰা'], repeat: ['পুনৰাবৃত্তি'], 'volume up': ['শব্দ বঢ়াওক'], 'volume down': ['শব্দ কমাওক'], 'play favorites': ['পছন্দৰ গান চলাওক'], 'open music': ['সংগীত খোলক'], 'go home': ['ঘৰলৈ যাওক'], start: ['আৰম্ভ কৰক'], continue: ['আগবঢ়ক'], restart: ['পুনৰ আৰম্ভ কৰক'], hint: ['ইংগিত'], easier: ['সহজ'], harder: ['কঠিন'] },
+            bn: { play: ['চালাও', 'প্লে'], pause: ['থামাও', 'বিরতি'], next: ['পরেরটি', 'পরবর্তী'], previous: ['আগেরটি', 'পিছনে'], stop: ['বন্ধ করো', 'থামাও'], repeat: ['আবার'], 'volume up': ['শব্দ বাড়াও'], 'volume down': ['শব্দ কমাও'], 'play favorites': ['পছন্দের গান চালাও'], 'open music': ['সঙ্গীত খোলো'], 'go home': ['হোম', 'বাড়িতে যাও'], start: ['শুরু করো'], continue: ['চালিয়ে যাও'], restart: ['আবার শুরু করো'], hint: ['ইঙ্গিত'], easier: ['সহজ'], harder: ['কঠিন'] },
+            brx: { play: ['दं', 'नाय'], pause: ['जाबाय'], next: ['फै'], previous: ['आगोल'], stop: ['दं नाय'], repeat: ['फिन'], 'volume up': ['रावज फिसाज'], 'volume down': ['रावज खमाय'], 'play favorites': ['मोनसे गाना दं'], 'open music': ['सुर खोल'], 'go home': ['नावसोर'], start: ['जागाय'], continue: ['सोलाय'], restart: ['फिन जागाय'], hint: ['इशारा'], easier: ['सोमो'], harder: ['गोसो'] },
+            mni: { play: ['ꯆꯨꯔꯥ', 'ꯄ꯭ꯂꯦ'], pause: ['ꯂꯣꯏꯁꯤꯟ'], next: ['ꯃꯊꯪ'], previous: ['ꯃꯃꯜ'], stop: ['ꯂꯣꯏꯁꯤꯟ'], repeat: ['ꯑꯃꯨꯛ'], 'volume up': ['ꯑꯥꯏꯕ ꯌꯥꯝ'], 'volume down': ['ꯑꯥꯏꯕ ꯍꯨꯝ'], 'play favorites': ['ꯄꯥꯝꯖꯔꯕ ꯆꯨꯔꯥ'], 'open music': ['ꯅꯣꯡꯃꯥꯏ ꯁꯣꯟ'], 'go home': ['ꯌꯨꯝ ꯇꯥꯔꯣ'], start: ['ꯍꯧꯖꯤꯛ'], continue: ['ꯃꯈꯥ ꯆꯠꯂꯨ'], restart: ['ꯑꯃꯨꯛ ꯍꯧꯖꯤꯛ'], hint: ['ꯑꯃꯨꯛ'], easier: ['ꯁꯥꯔꯜ'], harder: ['ꯌꯥꯝ ꯁꯥꯔꯜ'] },
+            kha: { play: ['tem', 'pyn'], pause: ['sangeh', 'sangeh noh'], next: ['sa bynta'], previous: ['shuwa'], stop: ['sangeh'], repeat: ['pynphai'], 'volume up': ['pynheh ka sur'], 'volume down': ['pynrit ka sur'], 'play favorites': ['tem ki favorites'], 'open music': ['plie ka music'], 'go home': ['leit sha iing'], start: ['sdang'], continue: ['bteng'], restart: ['sdang biang'], hint: ['jingmut'], easier: ['suk'], harder: ['eh'] },
+            lus: { play: ['play', 'chhuak'], pause: ['tawp', 'nghah'], next: ['dung'], previous: ['hmuh hma'], stop: ['tawp'], repeat: ['sawi leh'], 'volume up': ['sur tih san'], 'volume down': ['sur tih hniam'], 'play favorites': ['favorites play'], 'open music': ['music hawng'], 'go home': ['home ah kal'], start: ['tan'], continue: ['kal zel'], restart: ['tan leh'], hint: ['hriatna'], easier: ['awlsam'], harder: ['har'] },
+            ne: { play: ['बजाउनु', 'चलाउनु', 'प्ले'], pause: ['रोक्नुहोस्', 'पज'], next: ['अर्को'], previous: ['अघिल्लो', 'पछाडि'], stop: ['रोक्नुहोस्'], repeat: ['फेरि'], 'volume up': ['आवाज बढाउनुहोस्'], 'volume down': ['आवाज घटाउनुहोस्'], 'play favorites': ['मनपर्ने बजाउनुहोस्'], 'open music': ['संगीत खोल्नुहोस्'], 'go home': ['घर जानुहोस्', 'होम'], start: ['सुरु गर्नुहोस्'], continue: ['जारी राख्नुहोस्'], restart: ['फेरि सुरु गर्नुहोस्'], hint: ['संकेत'], easier: ['सजिलो'], harder: ['गाह्रो'] },
+          };
+
+          '''
+          i18n.write_text(text[:start] + block + text[end:], encoding='utf-8')
+
+          locales = Path('artifacts/ner-memory-assist/src/lib/voiceLocales.ts')
+          ltext = locales.read_text(encoding='utf-8')
+          for key in ('brx', 'mni', 'kha', 'lus'):
+              ltext = re.sub(rf"{key}: \[[^\]]+\],", f"{key}: ['{key}-IN', '{key}'],", ltext)
+          locales.write_text(ltext, encoding='utf-8')
+
+          voice = Path('artifacts/ner-memory-assist/src/lib/voice.ts')
+          v = voice.read_text(encoding='utf-8')
+          if 'waitForVoices' not in v:
+              marker = "function languagePrefix(locale: string): string {\n  return locale.toLowerCase().split('-')[0];\n}\n"
+              helper = marker + "\nfunction waitForVoices(timeoutMs = 1200): Promise<SpeechSynthesisVoice[]> {\n  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return Promise.resolve([]);\n  const synthesis = window.speechSynthesis;\n  const existing = synthesis.getVoices();\n  if (existing.length > 0) return Promise.resolve(existing);\n  return new Promise((resolve) => {\n    let finished = false;\n    const finish = () => { if (finished) return; finished = true; synthesis.removeEventListener('voiceschanged', finish); resolve(synthesis.getVoices()); };\n    synthesis.addEventListener('voiceschanged', finish);\n    window.setTimeout(finish, timeoutMs);\n  });\n}\n"
+              v = v.replace(marker, helper)
+              start2 = v.index('export function speakText')
+              end2 = v.index('export function stopSpeaking', start2)
+              speak = """export function speakText(text: string, lang: Lang): boolean {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
+  const cleanText = text.trim();
+  if (!cleanText) return false;
+  const speechLocale = languageOptions.find((item) => item.id === lang)?.speechLocale;
+  if (!speechLocale) return false;
+  const synthesis = window.speechSynthesis;
+  void waitForVoices().then((voices) => {
+    const prefix = languagePrefix(speechLocale);
+    const matchingVoice = voices.find((voice) => voice.lang.toLowerCase() === speechLocale.toLowerCase()) ?? voices.find((voice) => languagePrefix(voice.lang) === prefix);
+    if (!matchingVoice && prefix !== 'en') return;
+    try {
+      synthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = matchingVoice?.lang ?? speechLocale;
+      if (matchingVoice) utterance.voice = matchingVoice;
+      utterance.rate = 0.85;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      synthesis.speak(utterance);
+    } catch {}
+  });
+  return true;
+}
+
+"""
+              v = v[:start2] + speak + v[end2:]
+              voice.write_text(v, encoding='utf-8')
+
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/voice-fix-trigger-2 .github/workflows/apply-voice-fix.yml .github/voice-fix-trigger .github/workflows/fix-multilingual-voice.yml
+          git add -A
+          git commit -m 'Fix multilingual voice commands [voice-fix]'
+          git push
