@@ -1,0 +1,2 @@
+# The frontend is a Vite PWA; do not treat legacy API proxy files as Vercel Functions.
+api/
