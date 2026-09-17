@@ -1,0 +1,69 @@
+name: Connect verified offline voice
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/connect-verified-offline-voice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: ${{ !contains(github.event.head_commit.message, '[offline-voice-connected]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch App.tsx
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('artifacts/ner-memory-assist/src/App.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          marker = "import { getSpeechRecognitionLocale } from '@/lib/voiceLocales';"
+          addition = marker + "\nimport { prepareOfflineVoiceLanguage } from '@/lib/offline-voice';"
+          if "from '@/lib/offline-voice'" not in text:
+            if marker not in text:
+              raise SystemExit('voiceLocales import not found')
+            text = text.replace(marker, addition, 1)
+
+          old = """  const speak = () => {"""
+          new = """  const speak = async () => {"""
+          if old in text:
+            text = text.replace(old, new, 1)
+          elif new not in text:
+            raise SystemExit('speak function not found')
+
+          old = """    recognition.lang = getSpeechRecognitionLocale(lang);\n    recognition.continuous = false;\n    recognition.interimResults = false;\n\n    // Chromium supports local/on-device recognition on some browser versions.\n    // Only request it when explicitly available; otherwise the browser can use\n    // its normal online recognizer. This avoids falsely claiming offline support.\n    if ('processLocally' in recognition) {\n      try { recognition.processLocally = !navigator.onLine; } catch {}\n    }"""
+          new = """    const recognitionLocale = getSpeechRecognitionLocale(lang);\n    recognition.lang = recognitionLocale;\n    recognition.continuous = false;\n    recognition.interimResults = false;\n\n    // When offline, only force local recognition after the browser confirms\n    // that the selected language pack is installed and usable on-device.\n    if (!navigator.onLine) {\n      const offlineVoiceStatus = await prepareOfflineVoiceLanguage(recognitionLocale);\n      if (offlineVoiceStatus !== 'ready' && offlineVoiceStatus !== 'downloaded') {\n        recognitionRef.current = null;\n        setListening(false);\n        speakText(translate('micUnavailable'), lang);\n        return;\n      }\n      if ('processLocally' in recognition) {\n        try { recognition.processLocally = true; } catch {}\n      }\n    }"""
+          if old in text:
+            text = text.replace(old, new, 1)
+          elif new not in text:
+            raise SystemExit('recognition setup block not found')
+
+          path.write_text(text, encoding='utf-8')
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @workspace/ner-memory-assist build
+      - name: Commit verified integration
+        shell: bash
+        run: |
+          if git diff --quiet -- artifacts/ner-memory-assist/src/App.tsx; then
+            echo 'No App.tsx changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add artifacts/ner-memory-assist/src/App.tsx
+          git commit -m 'Connect verified offline voice [offline-voice-connected]'
+          git push
