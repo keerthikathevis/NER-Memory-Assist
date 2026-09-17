@@ -145,6 +145,30 @@ jobs:
               text = text.replace(old_button, new_button, 1)
 
           path.write_text(text, encoding='utf-8')
+
+      - name: Patch multilingual voice command routing
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('artifacts/ner-memory-assist/src/App.tsx')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';", "import { languageOptions, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';\nimport { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';")
+          s = s.replace("const canonical = resolveVoiceCommand(lang, command);", "const canonical = resolveMultilingualVoiceCommand(lang, command);")
+          s = s.replace("      settings: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];", "      settings: '/settings',\n      HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n      OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n    };\n    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];")
+          s = s.replace("const canonical = resolveVoiceCommand(lang, transcript);", "const canonical = resolveMultilingualVoiceCommand(lang, transcript);")
+          old = "      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;"
+          new = "      const canonical = resolveMultilingualVoiceCommand(lang, transcript);\n      const canonicalRoute: Record<string, string> = {\n        HOME: '/patient', OPEN_GAMES: '/games', OPEN_MEDICINE: '/medicine',\n        OPEN_MEMORIES: '/memories', OPEN_MUSIC: '/music', OPEN_PROGRESS: '/progress', OPEN_SETTINGS: '/settings',\n      };\n      const response = canonical\n        ? translate(titleKey[canonicalRoute[canonical] ?? canonical] ?? 'home')\n        : transcript;"
+          if old not in s:
+              raise SystemExit('Multilingual voice response block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Install dependencies and build
+        working-directory: artifacts/ner-memory-assist
+        run: |
+          npm ci
+          npm run build
+
       - name: Commit source change
         shell: bash
         run: |
@@ -155,5 +179,5 @@ jobs:
             exit 0
           fi
           git add artifacts/ner-memory-assist/src/App.tsx
-          git commit -m 'Fix voice button interaction [voice-button-fixed]'
+          git commit -m 'Fix multilingual voice command routing [voice-command-fixed]'
           git push
