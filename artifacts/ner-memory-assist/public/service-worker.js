@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ner-memory-assist-shell-v1';
+const CACHE_NAME = 'ner-memory-assist-shell-v2';
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg', '/favicon.svg'];
 
 self.addEventListener('install', (event) => {
