@@ -1,18 +1,20 @@
 type AudioContextWindow = Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
 
-const melodies: number[][] = [
-  [294, 392, 440, 392, 330, 294],
-  [220, 262, 330, 392, 330, 262],
-  [262, 294, 330, 392, 523, 392],
-  [196, 247, 294, 330, 294, 247],
-  [220, 277, 330, 370, 330, 277],
-  [523, 659, 784, 659, 587, 523],
-  [147, 165, 196, 165, 147, 131],
-  [196, 220, 247, 220, 196, 175],
-  [262, 330, 392, 330, 294, 262],
-  [174, 233, 261, 311, 261, 233],
-  [392, 440, 523, 659, 523, 440],
-  [110, 147, 165, 147, 123, 110],
+type TrackStyle = 'rhythm' | 'pluck' | 'bell' | 'flute' | 'melody' | 'bass' | 'rain' | 'ambient';
+
+const tracks: Array<{ notes: number[]; style: TrackStyle; stepMs: number; gain: number }> = [
+  { notes: [294, 392, 440, 494, 440, 392, 330, 392], style: 'rhythm', stepMs: 240, gain: 0.32 },
+  { notes: [220, 262, 330, 392, 330, 294, 262, 220], style: 'pluck', stepMs: 520, gain: 0.34 },
+  { notes: [262, 330, 392, 523, 494, 392, 330, 262], style: 'bell', stepMs: 620, gain: 0.30 },
+  { notes: [196, 247, 294, 330, 370, 330, 294, 247], style: 'flute', stepMs: 760, gain: 0.28 },
+  { notes: [220, 277, 330, 370, 415, 370, 330, 277], style: 'melody', stepMs: 560, gain: 0.30 },
+  { notes: [523, 587, 659, 784, 659, 587, 523, 440], style: 'flute', stepMs: 680, gain: 0.26 },
+  { notes: [147, 165, 196, 220, 196, 165, 147, 131], style: 'rain', stepMs: 1800, gain: 0.24 },
+  { notes: [196, 220, 247, 294, 247, 220, 196, 175], style: 'ambient', stepMs: 2100, gain: 0.20 },
+  { notes: [262, 294, 349, 392, 440, 392, 349, 294], style: 'pluck', stepMs: 700, gain: 0.30 },
+  { notes: [174, 233, 261, 311, 349, 311, 261, 233], style: 'rain', stepMs: 1500, gain: 0.23 },
+  { notes: [392, 440, 523, 659, 784, 659, 523, 440], style: 'bell', stepMs: 820, gain: 0.27 },
+  { notes: [110, 147, 165, 196, 165, 147, 123, 110], style: 'bass', stepMs: 900, gain: 0.28 },
 ];
 
 class DemoAudioEngine {
@@ -41,113 +43,151 @@ class DemoAudioEngine {
     void context.resume();
     this.stopNodes();
 
-    const id = Math.abs(tone) % melodies.length;
-    const melody = melodies[id];
+    const id = Math.abs(Math.trunc(tone)) % tracks.length;
+    const track = tracks[id];
 
-    // Each track uses a different synthesis style, so tracks are audibly different.
-    if (id === 6 || id === 7 || id === 11) {
-      this.playAmbient(context, id);
-    } else if (id === 4) {
-      this.playFlute(context, melody);
-    } else if (id === 0) {
-      this.playRhythm(context, melody);
-    } else {
-      this.playMelody(context, melody, id);
+    switch (track.style) {
+      case 'rhythm':
+        this.playRhythm(context, track);
+        break;
+      case 'pluck':
+        this.playPluck(context, track);
+        break;
+      case 'bell':
+        this.playBell(context, track);
+        break;
+      case 'flute':
+        this.playFlute(context, track);
+        break;
+      case 'bass':
+        this.playBass(context, track);
+        break;
+      case 'rain':
+        this.playRain(context, track);
+        break;
+      default:
+        this.playAmbientMelody(context, track);
+        break;
     }
     return true;
   }
 
-  private playMelody(context: AudioContext, notes: number[], id: number) {
+  private scheduleOscillator(
+    context: AudioContext,
+    frequency: number,
+    duration: number,
+    gainValue: number,
+    type: OscillatorType,
+    attack = 0.03,
+  ) {
+    if (!this.master) return;
+    const now = context.currentTime;
+    const osc = context.createOscillator();
+    const env = context.createGain();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.exponentialRampToValueAtTime(Math.max(0.01, gainValue), now + attack);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(env);
+    env.connect(this.master);
+    osc.start(now);
+    osc.stop(now + duration + 0.03);
+    this.nodes.push(osc, env);
+  }
+
+  private playRhythm(context: AudioContext, track: (typeof tracks)[number]) {
     let step = 0;
-    const interval = 420 + id * 45;
     const schedule = () => {
-      if (!this.master) return;
-      const now = context.currentTime;
-      const osc = context.createOscillator();
-      const env = context.createGain();
-      osc.type = id % 2 === 0 ? 'sine' : 'triangle';
-      osc.frequency.value = notes[step % notes.length];
-      env.gain.setValueAtTime(0.0001, now);
-      env.gain.exponentialRampToValueAtTime(0.45, now + 0.04);
-      env.gain.exponentialRampToValueAtTime(0.0001, now + 0.48);
-      osc.connect(env);
-      env.connect(this.master);
-      osc.start(now);
-      osc.stop(now + 0.52);
-      this.nodes.push(osc, env);
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 0.16, track.gain, 'square', 0.008);
+      if (step % 2 === 0) this.scheduleOscillator(context, note / 2, 0.11, track.gain * 0.55, 'triangle', 0.005);
       step += 1;
     };
     schedule();
-    this.timer = window.setInterval(schedule, interval);
+    this.timer = window.setInterval(schedule, track.stepMs);
   }
 
-  private playFlute(context: AudioContext, notes: number[]) {
+  private playPluck(context: AudioContext, track: (typeof tracks)[number]) {
     let step = 0;
     const schedule = () => {
-      if (!this.master) return;
-      const now = context.currentTime;
-      const osc = context.createOscillator();
-      const harmonic = context.createOscillator();
-      const env = context.createGain();
-      osc.type = 'sine';
-      harmonic.type = 'sine';
-      osc.frequency.value = notes[step % notes.length];
-      harmonic.frequency.value = notes[step % notes.length] * 2;
-      env.gain.setValueAtTime(0.0001, now);
-      env.gain.exponentialRampToValueAtTime(0.34, now + 0.12);
-      env.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
-      osc.connect(env);
-      harmonic.connect(env);
-      env.connect(this.master);
-      osc.start(now);
-      harmonic.start(now);
-      osc.stop(now + 0.8);
-      harmonic.stop(now + 0.8);
-      this.nodes.push(osc, harmonic, env);
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 0.48, track.gain, 'triangle', 0.008);
+      this.scheduleOscillator(context, note * 2, 0.28, track.gain * 0.22, 'sine', 0.004);
       step += 1;
     };
     schedule();
-    this.timer = window.setInterval(schedule, 850);
+    this.timer = window.setInterval(schedule, track.stepMs);
   }
 
-  private playRhythm(context: AudioContext, notes: number[]) {
+  private playBell(context: AudioContext, track: (typeof tracks)[number]) {
     let step = 0;
     const schedule = () => {
-      if (!this.master) return;
-      const now = context.currentTime;
-      const osc = context.createOscillator();
-      const env = context.createGain();
-      osc.type = 'square';
-      osc.frequency.value = notes[step % notes.length];
-      env.gain.setValueAtTime(0.0001, now);
-      env.gain.exponentialRampToValueAtTime(0.25, now + 0.01);
-      env.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-      osc.connect(env);
-      env.connect(this.master);
-      osc.start(now);
-      osc.stop(now + 0.18);
-      this.nodes.push(osc, env);
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 1.15, track.gain, 'sine', 0.01);
+      this.scheduleOscillator(context, note * 2.01, 0.75, track.gain * 0.32, 'sine', 0.01);
+      this.scheduleOscillator(context, note * 3.01, 0.5, track.gain * 0.12, 'sine', 0.01);
       step += 1;
     };
     schedule();
-    this.timer = window.setInterval(schedule, 220);
+    this.timer = window.setInterval(schedule, track.stepMs);
   }
 
-  private playAmbient(context: AudioContext, id: number) {
+  private playFlute(context: AudioContext, track: (typeof tracks)[number]) {
+    let step = 0;
+    const schedule = () => {
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 0.72, track.gain, 'sine', 0.12);
+      this.scheduleOscillator(context, note * 2, 0.62, track.gain * 0.08, 'sine', 0.16);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, track.stepMs);
+  }
+
+  private playBass(context: AudioContext, track: (typeof tracks)[number]) {
+    let step = 0;
+    const schedule = () => {
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 0.72, track.gain, 'sawtooth', 0.05);
+      this.scheduleOscillator(context, note * 2, 0.3, track.gain * 0.10, 'triangle', 0.03);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, track.stepMs);
+  }
+
+  private playAmbientMelody(context: AudioContext, track: (typeof tracks)[number]) {
+    let step = 0;
+    const schedule = () => {
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 1.55, track.gain, 'sine', 0.35);
+      this.scheduleOscillator(context, note * 1.5, 1.0, track.gain * 0.08, 'sine', 0.4);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, track.stepMs);
+  }
+
+  private playRain(context: AudioContext, track: (typeof tracks)[number]) {
+    if (!this.master) return;
+
     const bufferSize = context.sampleRate * 2;
     const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i += 1) data[i] = (Math.random() * 2 - 1) * (id === 11 ? 0.11 : 0.07);
+    for (let i = 0; i < bufferSize; i += 1) {
+      data[i] = (Math.random() * 2 - 1) * 0.13;
+    }
 
     const source = context.createBufferSource();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
     source.buffer = buffer;
     source.loop = true;
-    filter.type = id === 6 ? 'lowpass' : 'bandpass';
-    filter.frequency.value = id === 6 ? 850 : 1400;
-    filter.Q.value = 0.7;
-    gain.gain.value = 0.8;
+    filter.type = 'bandpass';
+    filter.frequency.value = track.notes[0] * 4;
+    filter.Q.value = 0.55;
+    gain.gain.value = track.gain * 0.7;
     source.connect(filter);
     filter.connect(gain);
     gain.connect(this.master);
@@ -155,26 +195,13 @@ class DemoAudioEngine {
     this.nodes.push(source, filter, gain);
 
     let step = 0;
-    const notes = melodies[id];
     const schedule = () => {
-      if (!this.master) return;
-      const now = context.currentTime;
-      const osc = context.createOscillator();
-      const env = context.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = notes[step % notes.length];
-      env.gain.setValueAtTime(0.0001, now);
-      env.gain.exponentialRampToValueAtTime(0.12, now + 0.5);
-      env.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
-      osc.connect(env);
-      env.connect(this.master);
-      osc.start(now);
-      osc.stop(now + 1.9);
-      this.nodes.push(osc, env);
+      const note = track.notes[step % track.notes.length];
+      this.scheduleOscillator(context, note, 1.1, track.gain * 0.5, 'sine', 0.35);
       step += 1;
     };
     schedule();
-    this.timer = window.setInterval(schedule, 1900);
+    this.timer = window.setInterval(schedule, track.stepMs);
   }
 
   pause() {
