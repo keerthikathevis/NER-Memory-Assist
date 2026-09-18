@@ -44,6 +44,85 @@ const relationshipLabels: Record<Lang, Record<string, string>> = {
 const localizedRelationship = (lang: Lang, relationship: string) =>
   relationshipLabels[lang]?.[relationship] ?? relationship;
 
+const culturalTitleLabels: Record<Lang, Record<string, string>> = {
+  en: {
+    'Kamakhya Temple': 'Kamakhya Temple', 'Umananda Temple': 'Umananda Temple', 'Navagraha Temple': 'Navagraha Temple',
+    'Hayagriva Madhava Temple': 'Hayagriva Madhava Temple', 'Nartiang Durga Temple': 'Nartiang Durga Temple',
+    'Tripura Sundari Temple': 'Tripura Sundari Temple', 'Tawang Monastery': 'Tawang Monastery',
+    'Madan Kamdev Temple': 'Madan Kamdev Temple', 'Dirgheswari Temple': 'Dirgheswari Temple',
+    'Kaziranga Rhino': 'Kaziranga Rhino', 'Great Hornbill': 'Great Hornbill', 'Bamboo basket': 'Bamboo basket',
+    'Pitha': 'Pitha',
+  },
+  ta: {
+    'Kamakhya Temple': 'காமாக்யா கோவில்', 'Umananda Temple': 'உமானந்தா கோவில்', 'Navagraha Temple': 'நவகிரக கோவில்',
+    'Hayagriva Madhava Temple': 'ஹயக்ரீவ மாதவ கோவில்', 'Nartiang Durga Temple': 'நார்டியாங் துர்கா கோவில்',
+    'Tripura Sundari Temple': 'திரிபுரா சுந்தரி கோவில்', 'Tawang Monastery': 'தவாங் மடாலயம்',
+    'Madan Kamdev Temple': 'மதன் காமதேவ் கோவில்', 'Dirgheswari Temple': 'தீர்கேஸ்வரி கோவில்',
+    'Kaziranga Rhino': 'காசிரங்கா காண்டாமிருகம்', 'Great Hornbill': 'பெரிய இருவாச்சி', 'Bamboo basket': 'மூங்கில் கூடை',
+    'Pitha': 'பிதா',
+  },
+  hi: {
+    'Kamakhya Temple': 'कामाख्या मंदिर', 'Umananda Temple': 'उमानंद मंदिर', 'Navagraha Temple': 'नवग्रह मंदिर',
+    'Hayagriva Madhava Temple': 'हयग्रीव माधव मंदिर', 'Nartiang Durga Temple': 'नार्तियांग दुर्गा मंदिर',
+    'Tripura Sundari Temple': 'त्रिपुरा सुंदरी मंदिर', 'Tawang Monastery': 'तवांग मठ',
+    'Madan Kamdev Temple': 'मदन कामदेव मंदिर', 'Dirgheswari Temple': 'दीर्घेश्वरी मंदिर',
+    'Kaziranga Rhino': 'काजीरंगा गैंडा', 'Great Hornbill': 'ग्रेट हॉर्नबिल', 'Bamboo basket': 'बांस की टोकरी',
+    'Pitha': 'पीठा',
+  },
+  as: {
+    'Kamakhya Temple': 'কামাখ্যা মন্দিৰ', 'Umananda Temple': 'উমানন্দ মন্দিৰ', 'Navagraha Temple': 'নৱগ্ৰহ মন্দিৰ',
+    'Hayagriva Madhava Temple': 'হয়গ্ৰীৱ মাধৱ মন্দিৰ', 'Nartiang Durga Temple': 'নাৰ্টিয়াং দুৰ্গা মন্দিৰ',
+    'Tripura Sundari Temple': 'ত্ৰিপুৰা সুন্দৰী মন্দিৰ', 'Tawang Monastery': 'তৱাং মঠ',
+    'Madan Kamdev Temple': 'মদন কামদেৱ মন্দিৰ', 'Dirgheswari Temple': 'দীৰ্ঘেশ্বৰী মন্দিৰ',
+    'Kaziranga Rhino': 'কাজিৰঙাৰ গঁড়', 'Great Hornbill': 'ডাঙৰ হৰ্ণবিল', 'Bamboo basket': 'বাঁহৰ টোপোলা', 'Pitha': 'পিঠা',
+  },
+  bn: {
+    'Kamakhya Temple': 'কামাখ্যা মন্দির', 'Umananda Temple': 'উমানন্দ মন্দির', 'Navagraha Temple': 'নবগ্রহ মন্দির',
+    'Hayagriva Madhava Temple': 'হয়গ্রীব মাধব মন্দির', 'Nartiang Durga Temple': 'নার্তিয়াং দুর্গা মন্দির',
+    'Tripura Sundari Temple': 'ত্রিপুরা সুন্দরী মন্দির', 'Tawang Monastery': 'তাওয়াং মঠ',
+    'Madan Kamdev Temple': 'মদন কামদেব মন্দির', 'Dirgheswari Temple': 'দীর্ঘেশ্বরী মন্দির',
+    'Kaziranga Rhino': 'কাজিরাঙার গণ্ডার', 'Great Hornbill': 'গ্রেট হর্নবিল', 'Bamboo basket': 'বাঁশের ঝুড়ি', 'Pitha': 'পিঠা',
+  },
+  brx: {
+    'Kamakhya Temple': 'कामाख्या मन्दिर', 'Umananda Temple': 'उमानन्दा मन्दिर', 'Navagraha Temple': 'नवग्रह मन्दिर',
+    'Hayagriva Madhava Temple': 'हयग्रीव माधव मन्दिर', 'Nartiang Durga Temple': 'नार्टियांग दुर्गा मन्दिर',
+    'Tripura Sundari Temple': 'त्रिपुरा सुन्दरी मन्दिर', 'Tawang Monastery': 'तवांग मठ',
+    'Madan Kamdev Temple': 'मदन कामदेव मन्दिर', 'Dirgheswari Temple': 'दिर्घेश्वरी मन्दिर',
+    'Kaziranga Rhino': 'काजिराङा गैंडा', 'Great Hornbill': 'ग्रेट हर्नबिल', 'Bamboo basket': 'बांसनि टोपला', 'Pitha': 'पिथा',
+  },
+  mni: {
+    'Kamakhya Temple': 'ꯀꯥꯃꯥꯈ꯭ꯌꯥ ꯃꯅꯗꯤꯔ', 'Umananda Temple': 'ꯎꯃꯥꯅꯟꯗ ꯃꯅꯗꯤꯔ', 'Navagraha Temple': 'ꯅꯋꯒ꯭ꯔꯍ ꯃꯅꯗꯤꯔ',
+    'Hayagriva Madhava Temple': 'ꯍꯌꯒ꯭ꯔꯤꯕ ꯃꯥꯙꯕ ꯃꯅꯗꯤꯔ', 'Nartiang Durga Temple': 'ꯅꯥꯔꯇꯤꯌꯥꯡ ꯗꯨꯔꯒꯥ ꯃꯅꯗꯤꯔ',
+    'Tripura Sundari Temple': 'ꯇ꯭ꯔꯤꯄꯨꯔꯥ ꯁꯨꯟꯗꯔꯤ ꯃꯅꯗꯤꯔ', 'Tawang Monastery': 'ꯇꯋꯥꯡ ꯃꯊꯛ',
+    'Madan Kamdev Temple': 'ꯃꯗꯟ ꯀꯥꯃꯗꯦꯕ ꯃꯅꯗꯤꯔ', 'Dirgheswari Temple': 'ꯗꯤꯔꯒꯦꯁ꯭ꯋꯔꯤ ꯃꯅꯗꯤꯔ',
+    'Kaziranga Rhino': 'ꯀꯥꯖꯤꯔꯥꯡꯒꯥ ꯂꯣꯏꯕꯤ', 'Great Hornbill': 'ꯍꯣꯔꯟꯕꯤꯜ', 'Bamboo basket': 'ꯕꯥꯝꯕꯨ ꯕꯥꯁꯀꯦꯠ', 'Pitha': 'ꯄꯤꯊꯥ',
+  },
+  kha: {
+    'Kamakhya Temple': 'Ka Temple Kamakhya', 'Umananda Temple': 'Ka Temple Umananda', 'Navagraha Temple': 'Ka Temple Navagraha',
+    'Hayagriva Madhava Temple': 'Ka Temple Hayagriva Madhava', 'Nartiang Durga Temple': 'Ka Temple Nartiang Durga',
+    'Tripura Sundari Temple': 'Ka Temple Tripura Sundari', 'Tawang Monastery': 'Ka Tawang Monastery',
+    'Madan Kamdev Temple': 'Ka Temple Madan Kamdev', 'Dirgheswari Temple': 'Ka Temple Dirgheswari',
+    'Kaziranga Rhino': 'U tyndon Kaziranga', 'Great Hornbill': 'U Hornbill', 'Bamboo basket': 'Ka synduk sieh', 'Pitha': 'Ka Pitha',
+  },
+  lus: {
+    'Kamakhya Temple': 'Kamakhya Temple', 'Umananda Temple': 'Umananda Temple', 'Navagraha Temple': 'Navagraha Temple',
+    'Hayagriva Madhava Temple': 'Hayagriva Madhava Temple', 'Nartiang Durga Temple': 'Nartiang Durga Temple',
+    'Tripura Sundari Temple': 'Tripura Sundari Temple', 'Tawang Monastery': 'Tawang Monastery',
+    'Madan Kamdev Temple': 'Madan Kamdev Temple', 'Dirgheswari Temple': 'Dirgheswari Temple',
+    'Kaziranga Rhino': 'Kaziranga Rhino', 'Great Hornbill': 'Great Hornbill', 'Bamboo basket': 'Bamboo basket', 'Pitha': 'Pitha',
+  },
+  ne: {
+    'Kamakhya Temple': 'कामाख्या मन्दिर', 'Umananda Temple': 'उमानन्द मन्दिर', 'Navagraha Temple': 'नवग्रह मन्दिर',
+    'Hayagriva Madhava Temple': 'हयग्रीव माधव मन्दिर', 'Nartiang Durga Temple': 'नार्तियाङ दुर्गा मन्दिर',
+    'Tripura Sundari Temple': 'त्रिपुरा सुन्दरी मन्दिर', 'Tawang Monastery': 'तवाङ गुम्बा',
+    'Madan Kamdev Temple': 'मदन कामदेव मन्दिर', 'Dirgheswari Temple': 'दीर्घेश्वरी मन्दिर',
+    'Kaziranga Rhino': 'काजिरङ्गाको गैँडा', 'Great Hornbill': 'ग्रेट हर्नबिल', 'Bamboo basket': 'बाँसको टोकरी', 'Pitha': 'पिठा',
+  },
+};
+
+const localizedCulturalTitle = (lang: Lang, title: string) =>
+  culturalTitleLabels[lang]?.[title] ?? culturalTitleLabels.en[title] ?? title;
+
 const culturalImage = (item: CulturalItem) =>
   typeof navigator !== 'undefined' && navigator.onLine && item.imageUrl ? item.imageUrl : item.imageDataUrl;
 const colors: Record<CulturalItem['color'], string> = {
@@ -500,7 +579,7 @@ function MatchGame({ lang, gameType }: { lang: Lang; gameType: 'family-match' | 
   };
   const modeLabel = mode === 'photoToPerson' ? translate('photoToPerson') : mode === 'photoToName' ? translate('photoToName') : mode === 'photoToRelationship' ? translate('photoToRelationship') : translate(mode);
   if (result) return <GameResultPanel lang={lang} result={result} onAgain={startGame} />;
-  return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? translate('culturalMatch') : translate('familyMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('chooseAnswer')}</p></div>{started && <Badge tone="muted">{translate('round')} {round + 1} / {roundTarget}</Badge>}</div>{!started ? <div className="space-y-5"><div><p className="mb-3 font-bold">{cultural ? translate('culturalContent') : translate('chooseGame')}</p><div className="grid gap-2 sm:grid-cols-3">{modes.map((value) => <button key={value} onClick={() => setMode(value)} className={`min-h-14 rounded-xl border px-3 text-left text-sm font-bold ${mode === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'border-[hsl(var(--border))]'}`}>{value === 'landmark' ? translate('landmark') : value === 'animal' ? translate('animal') : value === 'object' ? translate('object') : value === 'food' ? translate('food') : translate(value)}</button>)}</div></div><button onClick={startGame} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<div className="flex flex-col items-center rounded-3xl bg-[hsl(var(--muted))] p-6 text-center"><div className={`flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ${cultural ? colors[currentCulture.color] : 'bg-[hsl(var(--secondary))]'} text-4xl font-bold text-[hsl(var(--primary))]`}>{cultural ? <img src={culturalImage(currentCulture)} alt={currentCulture.titleKey} className="h-full w-full object-cover" /> : currentProfile.photoDataUrl ? <img src={currentProfile.photoDataUrl} alt={currentProfile.name} className="h-full w-full object-cover" /> : currentProfile.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div><p className="mt-4 text-lg font-bold">{translate('chooseAnswer')}</p>{hinted && <p className="mt-2 text-sm text-[hsl(var(--accent))]">{cultural ? currentCulture.titleKey : currentProfile.name}</p>}</div><div className="grid gap-3 sm:grid-cols-2">{options.map((option) => { const id = cultural ? (option as CulturalItem).id : (option as MemoryProfile).id; const profile = option as MemoryProfile; const label = cultural ? (option as CulturalItem).titleKey : mode === 'photoToRelationship' ? localizedRelationship(lang, profile.relationship) : profile.name; const showPhoto = cultural || mode === 'photoToPerson'; const showName = !cultural && mode === 'photoToName'; const showRelationship = !cultural && mode === 'photoToRelationship'; return <button key={id} onClick={() => choose(id)} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-[hsl(var(--card))] p-4 text-left font-bold transition-all hover:border-[hsl(var(--primary))]">{showPhoto && <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[hsl(var(--secondary))] text-sm">{cultural ? <img src={culturalImage(option as CulturalItem)} alt="" className="h-full w-full object-cover" /> : profile.photoDataUrl ? <img src={profile.photoDataUrl} alt="" className="h-full w-full object-cover" /> : profile.name.charAt(0)}</span>}{showName && <span className="flex-1">{profile.name}</span>}{showRelationship && <span className="flex-1">{localizedRelationship(lang, profile.relationship)}</span>}{cultural && <span className="flex-1">{label}</span>}</button>; })}</div>{feedback && <div className={`rounded-2xl p-4 text-center font-bold ${feedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(feedback)}</div>}<div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={startGame} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={() => { setHints((value) => value + 1); setHinted(true); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button></div></div>}</SectionCard>;
+  return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? translate('culturalMatch') : translate('familyMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('chooseAnswer')}</p></div>{started && <Badge tone="muted">{translate('round')} {round + 1} / {roundTarget}</Badge>}</div>{!started ? <div className="space-y-5"><div><p className="mb-3 font-bold">{cultural ? translate('culturalContent') : translate('chooseGame')}</p><div className="grid gap-2 sm:grid-cols-3">{modes.map((value) => <button key={value} onClick={() => setMode(value)} className={`min-h-14 rounded-xl border px-3 text-left text-sm font-bold ${mode === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'border-[hsl(var(--border))]'}`}>{value === 'landmark' ? translate('landmark') : value === 'animal' ? translate('animal') : value === 'object' ? translate('object') : value === 'food' ? translate('food') : translate(value)}</button>)}</div></div><button onClick={startGame} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<div className="flex flex-col items-center rounded-3xl bg-[hsl(var(--muted))] p-6 text-center"><div className={`flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ${cultural ? colors[currentCulture.color] : 'bg-[hsl(var(--secondary))]'} text-4xl font-bold text-[hsl(var(--primary))]`}>{cultural ? <img src={culturalImage(currentCulture)} alt={currentCulture.titleKey} className="h-full w-full object-cover" /> : currentProfile.photoDataUrl ? <img src={currentProfile.photoDataUrl} alt={currentProfile.name} className="h-full w-full object-cover" /> : currentProfile.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div><p className="mt-4 text-lg font-bold">{translate('chooseAnswer')}</p>{hinted && <p className="mt-2 text-sm text-[hsl(var(--accent))]">{cultural ? currentCulture.titleKey : currentProfile.name}</p>}</div><div className="grid gap-3 sm:grid-cols-2">{options.map((option) => { const id = cultural ? (option as CulturalItem).id : (option as MemoryProfile).id; const profile = option as MemoryProfile; const label = cultural ? localizedCulturalTitle(lang, (option as CulturalItem).titleKey) : mode === 'photoToRelationship' ? localizedRelationship(lang, profile.relationship) : profile.name; const showPhoto = cultural || mode === 'photoToPerson'; const showName = !cultural && mode === 'photoToName'; const showRelationship = !cultural && mode === 'photoToRelationship'; return <button key={id} onClick={() => choose(id)} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-[hsl(var(--card))] p-4 text-left font-bold transition-all hover:border-[hsl(var(--primary))]">{showPhoto && <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[hsl(var(--secondary))] text-sm">{cultural ? <img src={culturalImage(option as CulturalItem)} alt="" className="h-full w-full object-cover" /> : profile.photoDataUrl ? <img src={profile.photoDataUrl} alt="" className="h-full w-full object-cover" /> : profile.name.charAt(0)}</span>}{showName && <span className="flex-1">{profile.name}</span>}{showRelationship && <span className="flex-1">{localizedRelationship(lang, profile.relationship)}</span>}{cultural && <span className="flex-1">{label}</span>}</button>; })}</div>{feedback && <div className={`rounded-2xl p-4 text-center font-bold ${feedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(feedback)}</div>}<div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={startGame} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={() => { setHints((value) => value + 1); setHinted(true); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button></div></div>}</SectionCard>;
 }
 
 const blankMedicine = (): MedicineSchedule => ({
