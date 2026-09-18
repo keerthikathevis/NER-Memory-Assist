@@ -325,34 +325,51 @@ function JigsawGame({ lang, gameType }: { lang: Lang; gameType: 'personalized-ji
   const [elapsed, setElapsed] = useState(0);
   const [result, setResult] = useState<GameResult | null>(null);
   const [hintIndex, setHintIndex] = useState<number | null>(null);
+  const [personalIndex, setPersonalIndex] = useState(0);
+  const [personalProfile, setPersonalProfile] = useState<MemoryProfile | null>(() => getMemoryProfiles()[0] ?? null);
   const pieceCount = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 6 : 9;
   const culturalItem = culturalItems[0];
   const personalProfiles = getMemoryProfiles();
-  const personalProfile = personalProfiles[0];
-  const puzzleImage = cultural ? culturalItem.imageDataUrl : personalProfile.photoDataUrl;
+  const activePersonalProfile = personalProfile ?? personalProfiles[personalIndex % Math.max(personalProfiles.length, 1)] ?? null;
+  const puzzleImage = cultural ? culturalItem.imageDataUrl : activePersonalProfile?.photoDataUrl ?? '';
   const puzzleCols = pieceCount === 4 ? 2 : 3;
   const puzzleRows = pieceCount === 4 ? 2 : pieceCount === 6 ? 2 : 3;
   const pieceStyle = (piece: number) => ({
-    backgroundImage: `url(${puzzleImage})`,
+    backgroundImage: puzzleImage ? `url(${puzzleImage})` : 'none',
     backgroundSize: `${puzzleCols * 100}% ${puzzleRows * 100}%`,
     backgroundPosition: `${(piece % puzzleCols) * (100 / Math.max(puzzleCols - 1, 1))}% ${Math.floor(piece / puzzleCols) * (100 / Math.max(puzzleRows - 1, 1))}%`,
     backgroundRepeat: 'no-repeat',
   });
 
   const createPuzzle = () => {
+    if (!cultural) {
+      const latestProfiles = getMemoryProfiles().filter((profile) => Boolean(profile.photoDataUrl));
+      if (!latestProfiles.length) {
+        setStarted(false);
+        setPersonalProfile(null);
+        return;
+      }
+      const nextIndex = personalIndex % latestProfiles.length;
+      setPersonalProfile(latestProfiles[nextIndex]);
+      setPersonalIndex((value) => (value + 1) % latestProfiles.length);
+    }
+
     const nextPieces = Array.from({ length: pieceCount }, (_, index) => index).sort(() => Math.random() - 0.5);
     setPieces(nextPieces); setPlaced(Array.from({ length: pieceCount }, () => null)); setSelectedPiece(null); setAttempts(0); setHints(0); setHintIndex(null); setElapsed(0); setStartedAt(Date.now()); setStarted(true); setPaused(false); setResult(null);
   };
+
   const finish = (nextPlaced: (number | null)[], nextAttempts: number) => {
     const accuracy = Math.min(1, nextPlaced.filter((value, index) => value === index).length / Math.max(nextAttempts, pieceCount));
     const gameResult: GameResult = { id: `${gameType}-${Date.now()}`, gameType, accuracy, completionTime: Math.max(1, Math.floor((Date.now() - startedAt) / 1000)), attempts: nextAttempts, hintsUsed: hints, difficulty, score: scoreGame(accuracy, difficulty, nextAttempts, hints), createdAt: Date.now() };
     saveGameResult(gameResult); setResult(gameResult); setStarted(false);
   };
+
   useEffect(() => {
     if (!started || paused) return;
     const interval = window.setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
     return () => window.clearInterval(interval);
   }, [started, paused, startedAt]);
+
   useEffect(() => {
     const onCommand = (event: Event) => {
       const command = (event as CustomEvent<string>).detail;
@@ -367,6 +384,7 @@ function JigsawGame({ lang, gameType }: { lang: Lang; gameType: 'personalized-ji
     window.addEventListener('ner-voice-command', onCommand);
     return () => window.removeEventListener('ner-voice-command', onCommand);
   });
+
   const movePiece = (piece: number, slot: number) => {
     if (!started || paused || placed[slot] !== null) return;
     const nextAttempts = attempts + 1;
@@ -378,16 +396,22 @@ function JigsawGame({ lang, gameType }: { lang: Lang; gameType: 'personalized-ji
       setSelectedPiece(piece);
     }
   };
+
   const giveHint = () => {
     if (!started || paused) return;
     const openSlot = placed.findIndex((value) => value === null);
     if (openSlot >= 0) { setHintIndex(openSlot); setHints((value) => value + 1); }
   };
-  const slotGrid = pieceCount === 4 ? 'grid-cols-2' : pieceCount === 6 ? 'grid-cols-3' : 'grid-cols-3';
-  if (result) return <GameResultPanel lang={lang} result={result} onAgain={createPuzzle} />;
-  return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? culturalItem.titleKey : translate('rememberPlace')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('gameInstruction')}</p></div><div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]"><Clock3 size={17} />{elapsed}s</div></div>{!started ? <div className="space-y-5"><div className={`cultural-scene ${colors[culturalItem.color]} relative min-h-40 overflow-hidden rounded-2xl`}>{puzzleImage ? <img src={puzzleImage} alt={cultural ? culturalItem.titleKey : personalProfile.name} className="absolute inset-0 h-full w-full object-cover" /> : null}<div className="absolute inset-x-0 bottom-0 bg-black/45 p-4 text-center text-white"><p className="font-bold">{cultural ? culturalItem.detail : personalProfile.name}</p></div></div><DifficultyPicker lang={lang} difficulty={difficulty} setDifficulty={setDifficulty} /><button onClick={createPuzzle} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<p className="rounded-2xl bg-[hsl(var(--muted))] p-4 text-center text-sm">{translate('dragPieces')}</p><div className={`mx-auto grid max-w-md ${slotGrid} gap-2 rounded-2xl bg-[hsl(var(--muted))] p-3`}>{placed.map((piece, index) => <button key={index} onClick={() => selectedPiece !== null && movePiece(selectedPiece, index)} onDragOver={(event) => event.preventDefault()} onDrop={() => selectedPiece !== null && movePiece(selectedPiece, index)} className={`flex aspect-square min-h-20 items-center justify-center rounded-xl border-2 border-dashed text-3xl font-bold transition-all ${piece === null ? 'border-[hsl(var(--primary)/.35)] bg-[hsl(var(--card)/.6)]' : 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.18)]'} ${hintIndex === index ? 'ring-4 ring-[hsl(var(--accent)/.55)]' : ''}`}>{piece === null ? '?' : <span className="cultural-tile h-full w-full rounded-lg" data-piece={piece} style={pieceStyle(piece)}><span className="sr-only">{piece + 1}</span></span>}</button>)}</div><div className="flex flex-wrap justify-center gap-2">{pieces.filter((piece) => !placed.includes(piece)).map((piece) => <button key={piece} draggable onDragStart={() => setSelectedPiece(piece)} onClick={() => setSelectedPiece(piece)} className={`flex h-20 w-20 touch-none items-center justify-center overflow-hidden rounded-2xl border-2 bg-[hsl(var(--card))] text-xl font-bold shadow-sm ${selectedPiece === piece ? 'border-[hsl(var(--accent))] ring-4 ring-[hsl(var(--accent)/.25)]' : 'border-[hsl(var(--border))]'}`} style={pieceStyle(piece)}><span className="sr-only">{piece + 1}</span></button>)}</div><div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={createPuzzle} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={giveHint} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button><Badge tone="muted">{translate('attempts')}: {attempts} · {translate('hintsUsed')}: {hints}</Badge></div></div>}</SectionCard>;
-}
 
+  const slotGrid = pieceCount === 4 ? 'grid-cols-2' : 'grid-cols-3';
+  if (result) return <GameResultPanel lang={lang} result={result} onAgain={createPuzzle} />;
+
+  if (!cultural && !activePersonalProfile) {
+    return <SectionCard><div className="py-10 text-center"><UsersRound className="mx-auto mb-4 text-[hsl(var(--primary))]" size={40} /><h3 className="serif text-2xl font-semibold">{translate('personalMemories')}</h3><p className="mt-2 text-[hsl(var(--muted-foreground))]">{translate('memoriesEmpty')}</p><Link href="/memories" className="mt-5 inline-flex min-h-12 items-center rounded-xl bg-[hsl(var(--primary))] px-5 font-bold text-[hsl(var(--primary-foreground))]">{translate('editMemory')}</Link></div></SectionCard>;
+  }
+
+  return <SectionCard><div className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{cultural ? translate('culturalGames') : translate('personalizedGames')}</Badge><h3 className="serif mt-3 text-3xl">{cultural ? culturalItem.titleKey : translate('rememberPlace')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('gameInstruction')}</p></div><div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]"><Clock3 size={17} />{elapsed}s</div></div>{!started ? <div className="space-y-5"><div className={`cultural-scene ${colors[culturalItem.color]} relative min-h-40 overflow-hidden rounded-2xl`}>{puzzleImage ? <img src={puzzleImage} alt={cultural ? culturalItem.titleKey : activePersonalProfile?.name ?? ''} className="absolute inset-0 h-full w-full object-cover" /> : null}<div className="absolute inset-x-0 bottom-0 bg-black/45 p-4 text-center text-white"><p className="font-bold">{cultural ? culturalItem.detail : activePersonalProfile?.name}</p></div></div><DifficultyPicker lang={lang} difficulty={difficulty} setDifficulty={setDifficulty} /><button onClick={createPuzzle} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button></div> : <div className="space-y-5">{paused && <div className="rounded-2xl bg-[hsl(var(--secondary))] p-4 text-center font-bold">{translate('gamePaused')}</div>}<p className="rounded-2xl bg-[hsl(var(--muted))] p-4 text-center text-sm">{translate('dragPieces')}</p><div className={`mx-auto grid max-w-md ${slotGrid} gap-2 rounded-2xl bg-[hsl(var(--muted))] p-3`}>{placed.map((piece, index) => <button key={index} onClick={() => selectedPiece !== null && movePiece(selectedPiece, index)} onDragOver={(event) => event.preventDefault()} onDrop={() => selectedPiece !== null && movePiece(selectedPiece, index)} className={`flex aspect-square min-h-20 items-center justify-center rounded-xl border-2 border-dashed text-3xl font-bold transition-all ${piece === null ? 'border-[hsl(var(--primary)/.35)] bg-[hsl(var(--card)/.6)]' : 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.18)]'} ${hintIndex === index ? 'ring-4 ring-[hsl(var(--accent)/.55)]' : ''}`}>{piece === null ? '?' : <span className="cultural-tile h-full w-full rounded-lg" data-piece={piece} style={pieceStyle(piece)}><span className="sr-only">{piece + 1}</span></span>}</button>)}</div><div className="flex flex-wrap justify-center gap-2">{pieces.filter((piece) => !placed.includes(piece)).map((piece) => <button key={piece} draggable onDragStart={() => setSelectedPiece(piece)} onClick={() => setSelectedPiece(piece)} className={`flex h-20 w-20 touch-none items-center justify-center overflow-hidden rounded-2xl border-2 bg-[hsl(var(--card))] text-xl font-bold shadow-sm ${selectedPiece === piece ? 'border-[hsl(var(--accent))] ring-4 ring-[hsl(var(--accent)/.25)]' : 'border-[hsl(var(--border))]'}`} style={pieceStyle(piece)}><span className="sr-only">{piece + 1}</span></button>)}</div><div className="flex flex-wrap gap-2"><button onClick={() => setPaused(!paused)} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{paused ? <Play size={18} /> : <Pause size={18} />}{paused ? translate('continueGame') : translate('pause')}</button><button onClick={createPuzzle} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><RotateCcw size={18} />{translate('restart')}</button><button onClick={giveHint} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><Lightbulb size={18} />{translate('hint')}</button><Badge tone="muted">{translate('attempts')}: {attempts} · {translate('hintsUsed')}: {hints}</Badge></div></div>}</SectionCard>;
+}
 type MatchMode = 'photoToPerson' | 'photoToName' | 'photoToRelationship' | 'landmark' | 'animal' | 'object' | 'food';
 
 function MatchGame({ lang, gameType }: { lang: Lang; gameType: 'family-match' | 'cultural-match' }) {
