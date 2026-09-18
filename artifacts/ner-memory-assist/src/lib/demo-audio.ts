@@ -1,33 +1,24 @@
 type AudioContextWindow = Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
 
-type DemoPattern = {
-  wave: OscillatorType;
-  notes: number[];
-  intervalMs: number;
-  noteMs: number;
-  detune?: number;
-  gain?: number;
-};
-
-const patterns: DemoPattern[] = [
-  { wave: 'square', notes: [294, 392, 440, 392, 330, 392], intervalMs: 360, noteMs: 210, gain: 0.55 },
-  { wave: 'triangle', notes: [220, 247, 294, 330, 294, 247], intervalMs: 520, noteMs: 380, gain: 0.62 },
-  { wave: 'sine', notes: [262, 330, 392, 523, 392, 330], intervalMs: 650, noteMs: 520, gain: 0.58 },
-  { wave: 'triangle', notes: [196, 247, 294, 247, 220, 196], intervalMs: 760, noteMs: 620, gain: 0.62 },
-  { wave: 'sawtooth', notes: [220, 277, 330, 370, 330, 277], intervalMs: 430, noteMs: 260, gain: 0.42 },
-  { wave: 'sine', notes: [523, 659, 784, 659, 587, 523], intervalMs: 700, noteMs: 590, gain: 0.5 },
-  { wave: 'triangle', notes: [147, 165, 196, 165, 147, 131], intervalMs: 980, noteMs: 830, gain: 0.7 },
-  { wave: 'sine', notes: [196, 220, 247, 220, 196, 175], intervalMs: 1100, noteMs: 950, gain: 0.68 },
-  { wave: 'triangle', notes: [262, 330, 392, 330, 294, 262], intervalMs: 820, noteMs: 680, gain: 0.58 },
-  { wave: 'sine', notes: [174, 233, 261, 311, 261, 233], intervalMs: 910, noteMs: 760, detune: -7, gain: 0.48 },
-  { wave: 'triangle', notes: [392, 440, 523, 659, 523, 440], intervalMs: 480, noteMs: 330, detune: 5, gain: 0.5 },
-  { wave: 'sine', notes: [110, 147, 165, 147, 123, 110], intervalMs: 1250, noteMs: 1080, detune: 3, gain: 0.72 },
+const melodies: number[][] = [
+  [294, 392, 440, 392, 330, 294],
+  [220, 262, 330, 392, 330, 262],
+  [262, 294, 330, 392, 523, 392],
+  [196, 247, 294, 330, 294, 247],
+  [220, 277, 330, 370, 330, 277],
+  [523, 659, 784, 659, 587, 523],
+  [147, 165, 196, 165, 147, 131],
+  [196, 220, 247, 220, 196, 175],
+  [262, 330, 392, 330, 294, 262],
+  [174, 233, 261, 311, 261, 233],
+  [392, 440, 523, 659, 523, 440],
+  [110, 147, 165, 147, 123, 110],
 ];
 
 class DemoAudioEngine {
   private context: AudioContext | null = null;
-  private gain: GainNode | null = null;
-  private oscillators: OscillatorNode[] = [];
+  private master: GainNode | null = null;
+  private nodes: AudioNode[] = [];
   private timer: number | null = null;
   private volume = 0.18;
 
@@ -37,49 +28,159 @@ class DemoAudioEngine {
       const AudioCtor = (window as AudioContextWindow).AudioContext ?? (window as AudioContextWindow).webkitAudioContext;
       if (!AudioCtor) return null;
       this.context = new AudioCtor();
-      this.gain = this.context.createGain();
-      this.gain.gain.value = this.volume;
-      this.gain.connect(this.context.destination);
+      this.master = this.context.createGain();
+      this.master.gain.value = this.volume;
+      this.master.connect(this.context.destination);
     }
     return this.context;
   }
 
   play(tone = 0) {
     const context = this.getContext();
-    if (!context || !this.gain) return false;
+    if (!context || !this.master) return false;
     void context.resume();
     this.stopNodes();
 
-    const pattern = patterns[Math.abs(tone) % patterns.length];
-    let step = 0;
-    const schedule = () => {
-      if (!this.context || !this.gain) return;
-      const oscillator = this.context.createOscillator();
-      const envelope = this.context.createGain();
-      const now = this.context.currentTime;
-      oscillator.type = pattern.wave;
-      oscillator.frequency.value = pattern.notes[step % pattern.notes.length];
-      oscillator.detune.value = pattern.detune ?? 0;
-      envelope.gain.setValueAtTime(0.0001, now);
-      envelope.gain.exponentialRampToValueAtTime(pattern.gain ?? 0.6, now + 0.025);
-      envelope.gain.exponentialRampToValueAtTime(0.0001, now + pattern.noteMs / 1000);
-      oscillator.connect(envelope);
-      envelope.connect(this.gain);
-      oscillator.start(now);
-      oscillator.stop(now + pattern.noteMs / 1000 + 0.03);
-      this.oscillators.push(oscillator);
-      oscillator.onended = () => { this.oscillators = this.oscillators.filter((item) => item !== oscillator); };
-      step += 1;
-    };
+    const id = Math.abs(tone) % melodies.length;
+    const melody = melodies[id];
 
-    schedule();
-    this.timer = window.setInterval(schedule, pattern.intervalMs);
+    // Each track uses a different synthesis style, so tracks are audibly different.
+    if (id === 6 || id === 7 || id === 11) {
+      this.playAmbient(context, id);
+    } else if (id === 4) {
+      this.playFlute(context, melody);
+    } else if (id === 0) {
+      this.playRhythm(context, melody);
+    } else {
+      this.playMelody(context, melody, id);
+    }
     return true;
   }
 
+  private playMelody(context: AudioContext, notes: number[], id: number) {
+    let step = 0;
+    const interval = 420 + id * 45;
+    const schedule = () => {
+      if (!this.master) return;
+      const now = context.currentTime;
+      const osc = context.createOscillator();
+      const env = context.createGain();
+      osc.type = id % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.value = notes[step % notes.length];
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.exponentialRampToValueAtTime(0.45, now + 0.04);
+      env.gain.exponentialRampToValueAtTime(0.0001, now + 0.48);
+      osc.connect(env);
+      env.connect(this.master);
+      osc.start(now);
+      osc.stop(now + 0.52);
+      this.nodes.push(osc, env);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, interval);
+  }
+
+  private playFlute(context: AudioContext, notes: number[]) {
+    let step = 0;
+    const schedule = () => {
+      if (!this.master) return;
+      const now = context.currentTime;
+      const osc = context.createOscillator();
+      const harmonic = context.createOscillator();
+      const env = context.createGain();
+      osc.type = 'sine';
+      harmonic.type = 'sine';
+      osc.frequency.value = notes[step % notes.length];
+      harmonic.frequency.value = notes[step % notes.length] * 2;
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.exponentialRampToValueAtTime(0.34, now + 0.12);
+      env.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+      osc.connect(env);
+      harmonic.connect(env);
+      env.connect(this.master);
+      osc.start(now);
+      harmonic.start(now);
+      osc.stop(now + 0.8);
+      harmonic.stop(now + 0.8);
+      this.nodes.push(osc, harmonic, env);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, 850);
+  }
+
+  private playRhythm(context: AudioContext, notes: number[]) {
+    let step = 0;
+    const schedule = () => {
+      if (!this.master) return;
+      const now = context.currentTime;
+      const osc = context.createOscillator();
+      const env = context.createGain();
+      osc.type = 'square';
+      osc.frequency.value = notes[step % notes.length];
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.exponentialRampToValueAtTime(0.25, now + 0.01);
+      env.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      osc.connect(env);
+      env.connect(this.master);
+      osc.start(now);
+      osc.stop(now + 0.18);
+      this.nodes.push(osc, env);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, 220);
+  }
+
+  private playAmbient(context: AudioContext, id: number) {
+    const bufferSize = context.sampleRate * 2;
+    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i += 1) data[i] = (Math.random() * 2 - 1) * (id === 11 ? 0.11 : 0.07);
+
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    filter.type = id === 6 ? 'lowpass' : 'bandpass';
+    filter.frequency.value = id === 6 ? 850 : 1400;
+    filter.Q.value = 0.7;
+    gain.gain.value = 0.8;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.master);
+    source.start();
+    this.nodes.push(source, filter, gain);
+
+    let step = 0;
+    const notes = melodies[id];
+    const schedule = () => {
+      if (!this.master) return;
+      const now = context.currentTime;
+      const osc = context.createOscillator();
+      const env = context.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = notes[step % notes.length];
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.exponentialRampToValueAtTime(0.12, now + 0.5);
+      env.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+      osc.connect(env);
+      env.connect(this.master);
+      osc.start(now);
+      osc.stop(now + 1.9);
+      this.nodes.push(osc, env);
+      step += 1;
+    };
+    schedule();
+    this.timer = window.setInterval(schedule, 1900);
+  }
+
   pause() {
-    if (this.context?.state === 'running') void this.context.suspend();
-    else if (this.context?.state === 'suspended') void this.context.resume();
+    if (!this.context) return;
+    if (this.context.state === 'running') void this.context.suspend();
+    else if (this.context.state === 'suspended') void this.context.resume();
   }
 
   stop() {
@@ -91,14 +192,21 @@ class DemoAudioEngine {
 
   setVolume(value: number) {
     this.volume = Math.min(1, Math.max(0, value));
-    if (this.gain) this.gain.gain.value = this.volume;
+    if (this.master) this.master.gain.value = this.volume;
   }
 
   private stopNodes() {
-    this.oscillators.forEach((oscillator) => {
-      try { oscillator.stop(); } catch { /* already stopped */ }
+    this.nodes.forEach((node) => {
+      try {
+        if ('stop' in node && typeof (node as OscillatorNode | AudioBufferSourceNode).stop === 'function') {
+          (node as OscillatorNode | AudioBufferSourceNode).stop();
+        }
+      } catch {
+        // Node may already be stopped.
+      }
+      try { node.disconnect(); } catch { /* already disconnected */ }
     });
-    this.oscillators = [];
+    this.nodes = [];
   }
 }
 
