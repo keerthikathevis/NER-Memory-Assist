@@ -32,6 +32,7 @@ export const writeStore = (key: string, value: unknown) => {
       'ner-medicine-events': 'medicine-events',
       'ner-memory-profiles': 'memory-profiles',
       'ner-game-results': 'game-results',
+      'ner-emergency-contacts': 'emergency-contacts',
       'ner-music-favorites': 'music-preferences',
       'ner-music-volume': 'music-preferences',
     };
@@ -45,6 +46,23 @@ export const writeStore = (key: string, value: unknown) => {
 
 export const getMemoryProfiles = (): MemoryProfile[] =>
   readStore<MemoryProfile[]>('ner-memory-profiles', demoMemoryProfiles);
+
+export type EmergencyContact = {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  address: string;
+  note: string;
+  isEmergency: boolean;
+};
+
+export const getEmergencyContacts = (): EmergencyContact[] =>
+  readStore<EmergencyContact[]>('ner-emergency-contacts', []);
+
+export const saveEmergencyContacts = (contacts: EmergencyContact[]) => {
+  writeStore('ner-emergency-contacts', contacts.slice(0, 10));
+};
 
 export const getGameResults = (): GameResult[] => readStore<GameResult[]>('ner-game-results', []);
 
