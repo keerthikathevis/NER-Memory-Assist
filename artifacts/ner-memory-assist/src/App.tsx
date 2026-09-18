@@ -19,7 +19,6 @@ import { speakText } from '@/lib/voice';
 import { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/offline-voice';
 import { getSpeechRecognitionLocale } from '@/lib/voiceLocales';
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
-import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
 import { clearLocalDataMirror, clearMedicineData, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type MemoryProfile, writeStore } from '@/lib/storage';
 import { clearSyncQueue, getSyncQueue, resolveSyncConflict, syncService, type SyncRecord } from '@/lib/sync-service';
@@ -744,71 +743,177 @@ const musicCategoryKeys: Record<MusicCategory, CopyKey> = { favorites: 'favorite
 
 function Music({ lang }: { lang: Lang }) {
   const translate = (key: CopyKey) => tr(lang, key);
+  const profiles = useMemo(() => getMemoryProfiles().slice(0, 25), []);
+  const [profileIndex, setProfileIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [trackId, setTrackId] = useState(demoMusicTracks[0].id);
   const [repeat, setRepeat] = useState(false);
-  const [volume, setVolume] = useState(() => readStore('ner-music-volume', 0.18));
-  const [category, setCategory] = useState<MusicCategory>('regional');
-  const [favorites, setFavorites] = useState<string[]>(() => readStore('ner-music-favorites', []));
-  const [listenStarted, setListenStarted] = useState(false);
-  const [listenTrack, setListenTrack] = useState<MusicTrack>(demoMusicTracks[0]);
-  const [listenAttempts, setListenAttempts] = useState(0);
-  const [listenStartedAt, setListenStartedAt] = useState(0);
-  const [listenFeedback, setListenFeedback] = useState<'correct' | 'tryAgain' | null>(null);
-  const [listenResult, setListenResult] = useState<GameResult | null>(null);
-  const selectedTrack = demoMusicTracks.find((track) => track.id === trackId) ?? demoMusicTracks[0];
-  const visibleTracks = category === 'favorites' ? demoMusicTracks.filter((track) => favorites.includes(track.id)) : demoMusicTracks.filter((track) => track.category === category);
-  const categories: MusicCategory[] = ['favorites', 'calm', 'memories', 'regional', 'instrumental', 'nature'];
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => () => demoAudio.stop(), []);
-  useEffect(() => { demoAudio.setVolume(volume); writeStore('ner-music-volume', volume); }, [volume]);
+  const currentProfile = profiles[profileIndex] ?? null;
+  const voiceNote = currentProfile?.voiceNoteDataUrl ?? '';
+
+  useEffect(() => {
+    setPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [profileIndex]);
+
+  useEffect(() => () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, []);
+
+  const stopVoice = () => {
+    if (!audioRef.current) return;
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    setPlaying(false);
+  };
+
+  const playVoice = () => {
+    if (!voiceNote || !audioRef.current) return;
+    void audioRef.current.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+  };
+
+  const toggleVoice = () => {
+    if (!audioRef.current || !voiceNote) return;
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      playVoice();
+    }
+  };
+
+  const moveProfile = (direction: number) => {
+    if (!profiles.length) return;
+    stopVoice();
+    setProfileIndex((value) => (value + direction + profiles.length) % profiles.length);
+  };
+
   useEffect(() => {
     const onCommand = (event: Event) => {
       const command = (event as CustomEvent<string>).detail;
-      if (command === 'play' || command === 'continue') { setPlaying(true); demoAudio.play(selectedTrack.tone); }
-      if (command === 'pause') { setPlaying(false); demoAudio.pause(); }
-      if (command === 'stop') { setPlaying(false); demoAudio.stop(); }
-      if (command === 'next') { setTrackId(demoMusicTracks[(demoMusicTracks.findIndex((track) => track.id === trackId) + 1) % demoMusicTracks.length].id); setPlaying(true); }
-      if (command === 'previous') { setTrackId(demoMusicTracks[(demoMusicTracks.findIndex((track) => track.id === trackId) - 1 + demoMusicTracks.length) % demoMusicTracks.length].id); setPlaying(true); }
-      if (command === 'repeat') setRepeat((value) => !value);
-      if (command === 'volume up') setVolume((value) => Math.min(1, value + 0.1));
-      if (command === 'volume down') setVolume((value) => Math.max(0, value - 0.1));
-      if (command === 'play favorites') setCategory('favorites');
+      if (command === 'play' || command === 'continue') playVoice();
+      if (command === 'pause') {
+        audioRef.current?.pause();
+        setPlaying(false);
+      }
+      if (command === 'stop') stopVoice();
+      if (command === 'next') moveProfile(1);
+      if (command === 'previous') moveProfile(-1);
+      if (command === 'repeat') {
+        setRepeat((value) => !value);
+        if (audioRef.current && voiceNote) {
+          audioRef.current.currentTime = 0;
+          playVoice();
+        }
+      }
     };
     window.addEventListener('ner-voice-command', onCommand);
     return () => window.removeEventListener('ner-voice-command', onCommand);
-  }, [selectedTrack, trackId]);
+  }, [profileIndex, profiles.length, voiceNote, playing]);
 
-  const togglePlaying = () => {
-    if (playing) { setPlaying(false); demoAudio.pause(); } else { setPlaying(true); demoAudio.play(selectedTrack.tone); }
-  };
-  const chooseTrack = (track: MusicTrack) => { setTrackId(track.id); setPlaying(true); demoAudio.play(track.tone); };
-  const toggleFavorite = () => {
-    const next = favorites.includes(selectedTrack.id) ? favorites.filter((id) => id !== selectedTrack.id) : [...favorites, selectedTrack.id];
-    setFavorites(next); writeStore('ner-music-favorites', next);
-  };
-  const startListenMatch = () => { const next = demoMusicTracks[Math.floor(Math.random() * demoMusicTracks.length)]; setListenTrack(next); setListenAttempts(0); setListenFeedback(null); setListenStartedAt(Date.now()); setListenStarted(true); setListenResult(null); demoAudio.play(next.tone); };
-  const playListenClip = () => { demoAudio.play(listenTrack.tone); window.setTimeout(() => demoAudio.stop(), 2600); };
-  const chooseListenCategory = (choice: Exclude<MusicCategory, 'favorites'>) => {
-    if (!listenStarted || listenFeedback === 'correct') return;
-    const nextAttempts = listenAttempts + 1;
-    setListenAttempts(nextAttempts);
-    if (choice === listenTrack.category) {
-      setListenFeedback('correct');
-      const result: GameResult = { id: `listen-match-${Date.now()}`, gameType: 'listen-match', accuracy: 1 / nextAttempts, completionTime: Math.max(1, Math.floor((Date.now() - listenStartedAt) / 1000)), attempts: nextAttempts, hintsUsed: 0, difficulty: 'easy', score: scoreGame(1 / nextAttempts, 'easy', nextAttempts, 0), createdAt: Date.now() };
-      window.setTimeout(() => { saveGameResult(result); setListenResult(result); setListenStarted(false); demoAudio.stop(); }, 650);
-    } else {
-      setListenFeedback('tryAgain');
-      window.setTimeout(() => setListenFeedback(null), 800);
-    }
-  };
-  if (listenResult) return <div className="gentle-in space-y-5"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} /><GameResultPanel lang={lang} result={listenResult} onAgain={startListenMatch} /><p className="text-center text-sm text-[hsl(var(--muted-foreground))]">{translate('musicResultSaved')}</p></div>;
-  return <div className="gentle-in space-y-5"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} />
-    <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><SectionCard className="overflow-hidden bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"><div className="relative flex min-h-80 flex-col justify-between overflow-hidden rounded-2xl bg-[hsl(var(--primary)/.35)] p-6"><div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[25px] border-[hsl(var(--accent)/.6)]" /><div className="relative flex justify-between"><Badge tone="accent">{translate(musicCategoryKeys[selectedTrack.category])}</Badge><Volume2 size={21} /></div><div className="relative"><p className="text-sm opacity-70">{translate('demoAudio')}</p><h3 className="serif mt-1 text-3xl">{selectedTrack.title}</h3><p className="mt-2 text-sm opacity-75">{selectedTrack.description}</p><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/20"><div className={`h-full bg-[hsl(var(--accent))] ${playing ? 'w-2/3' : 'w-1/5'}`} /></div><div className="mt-5 flex items-center justify-center gap-3"><button onClick={() => { const index = (demoMusicTracks.findIndex((track) => track.id === selectedTrack.id) - 1 + demoMusicTracks.length) % demoMusicTracks.length; chooseTrack(demoMusicTracks[index]); }} aria-label={translate('previous')} className="rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={togglePlaying} aria-label={playing ? translate('pause') : translate('play')} className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white">{playing ? <Pause /> : <Play className="ml-1" />}</button><button onClick={() => { const index = (demoMusicTracks.findIndex((track) => track.id === selectedTrack.id) + 1) % demoMusicTracks.length; chooseTrack(demoMusicTracks[index]); }} aria-label={translate('next')} className="rotate-180 rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={() => { setPlaying(false); demoAudio.stop(); }} aria-label={translate('stop')} className="rounded-full p-3 hover:bg-white/10"><Square size={20} /></button></div></div></div></SectionCard>
-      <SectionCard><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="text-xl font-bold">{translate('playlist')}</h3><button onClick={toggleFavorite} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold" aria-label={translate(favorites.includes(selectedTrack.id) ? 'unfavorite' : 'favorite')}><Star size={18} fill={favorites.includes(selectedTrack.id) ? 'currentColor' : 'none'} />{translate(favorites.includes(selectedTrack.id) ? 'unfavorite' : 'favorite')}</button></div><div className="mb-4 flex flex-wrap gap-2">{categories.map((value) => <button key={value} onClick={() => setCategory(value)} className={`min-h-11 rounded-xl border px-3 text-sm font-bold ${category === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}>{translate(musicCategoryKeys[value])}</button>)}</div><div className="space-y-3">{visibleTracks.length ? visibleTracks.map((track) => <button key={track.id} onClick={() => chooseTrack(track)} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${selectedTrack.id === track.id ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : 'border-[hsl(var(--border))]'}`}><div className="rounded-xl bg-[hsl(var(--secondary))] p-3"><Music2 size={20} /></div><div className="flex-1"><p className="font-bold">{track.title}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">{track.duration} · {translate('demoAudio')}</p></div>{selectedTrack.id === track.id && playing ? <Pause size={18} /> : <Play size={18} />}</button>) : <p className="rounded-2xl bg-[hsl(var(--muted))] p-4 text-sm">{translate('noResults')}</p>}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button onClick={() => { setPlaying(false); demoAudio.stop(); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><CircleHelp size={17} />{translate('stop')}</button><button onClick={() => setRepeat(!repeat)} className={`flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold ${repeat ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}><RotateCcw size={17} />{translate('repeat')}</button><label className="flex min-h-12 items-center gap-2 rounded-xl border px-3"><Volume1 size={18} /><input aria-label={translate('volume')} type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => setVolume(Number(event.target.value))} /></label></div></SectionCard></div>
-    <SectionCard><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{translate('listenMatch')}</Badge><h3 className="serif mt-2 text-3xl">{translate('listenMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('listenMatchHint')}</p></div>{listenStarted && <Badge tone="muted">{translate('attempts')}: {listenAttempts}</Badge>}</div>{!listenStarted ? <button onClick={startListenMatch} className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button> : <div className="mt-5 space-y-4"><button onClick={playListenClip} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--secondary))] font-bold"><Volume2 size={20} />{translate('playClip')}</button><p className="font-bold">{translate('matchCategory')}</p><div className="grid gap-3 sm:grid-cols-3">{(['calm', 'regional', 'nature'] as const).map((choice) => <button key={choice} onClick={() => chooseListenCategory(choice)} className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border p-3 font-bold"><Music2 size={22} className="text-[hsl(var(--primary))]" />{translate(musicCategoryKeys[choice])}</button>)}</div>{listenFeedback && <div className={`rounded-2xl p-4 text-center font-bold ${listenFeedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(listenFeedback)}</div>}</div>}</SectionCard>
-    <p className="text-center text-xs text-[hsl(var(--muted-foreground))]">{translate('audioDemoNote')}</p>
-  </div>;
+  if (!profiles.length) {
+    return (
+      <div className="space-y-5">
+        <PageIntro title={translate('personalMemories')} subtitle={translate('memoriesEmpty')} />
+        <SectionCard>
+          <div className="rounded-3xl border border-dashed p-8 text-center">
+            <UsersRound className="mx-auto mb-3 h-12 w-12 text-[hsl(var(--muted-foreground))]" />
+            <p className="font-bold">{translate('memoriesEmpty')}</p>
+          </div>
+        </SectionCard>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <PageIntro title={translate('personalMemories')} subtitle={translate('voicePreview')} />
+
+      <SectionCard>
+        <div className="space-y-5">
+          {currentProfile?.photoDataUrl ? (
+            <div className="overflow-hidden rounded-3xl border bg-[hsl(var(--card))]">
+              <img
+                src={currentProfile.photoDataUrl}
+                alt={currentProfile.name}
+                className="block h-72 w-full object-contain bg-[hsl(var(--muted))] md:h-96"
+              />
+            </div>
+          ) : (
+            <div className="flex h-72 items-center justify-center rounded-3xl border bg-[hsl(var(--secondary))] text-6xl font-black md:h-96">
+              {currentProfile?.name?.charAt(0) ?? '?'}
+            </div>
+          )}
+
+          <div className="text-center">
+            <h2 className="text-2xl font-black">{currentProfile?.name}</h2>
+            <p className="mt-1 text-lg font-bold text-[hsl(var(--muted-foreground))]">
+              {localizedRelationship(lang, currentProfile?.relationship ?? '')}
+            </p>
+          </div>
+
+          {voiceNote ? (
+            <audio
+              ref={audioRef}
+              src={voiceNote}
+              preload="metadata"
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onEnded={() => {
+                if (repeat && audioRef.current) {
+                  audioRef.current.currentTime = 0;
+                  playVoice();
+                } else {
+                  setPlaying(false);
+                }
+              }}
+              className="hidden"
+            />
+          ) : null}
+
+          <div className="rounded-3xl border bg-[hsl(var(--secondary))] p-5 text-center">
+            <p className="mb-4 text-lg font-black">{translate('voicePreview')}</p>
+            <p className="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
+              {voiceNote ? translate('playVoiceCue') : translate('noVoiceNote')}
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button type="button" onClick={() => moveProfile(-1)} aria-label={translate('previous')} className="min-h-14 min-w-14 rounded-2xl border bg-[hsl(var(--card))] px-5 font-bold">
+                <ArrowLeft className="mx-auto" size={24} />
+              </button>
+              <button type="button" onClick={toggleVoice} disabled={!voiceNote} aria-label={playing ? translate('pause') : translate('play')} className="min-h-16 min-w-28 rounded-2xl bg-[hsl(var(--primary))] px-7 text-[hsl(var(--primary-foreground))] font-black disabled:opacity-40">
+                {playing ? <Pause className="mx-auto" size={28} /> : <Play className="mx-auto" size={28} />}
+              </button>
+              <button type="button" onClick={() => moveProfile(1)} aria-label={translate('next')} className="min-h-14 min-w-14 rounded-2xl border bg-[hsl(var(--card))] px-5 font-bold">
+                <ArrowLeft className="mx-auto rotate-180" size={24} />
+              </button>
+              <button type="button" onClick={stopVoice} disabled={!voiceNote} aria-label={translate('stop')} className="min-h-14 min-w-14 rounded-2xl border bg-[hsl(var(--card))] px-5 font-bold disabled:opacity-40">
+                <Square className="mx-auto" size={22} />
+              </button>
+              <button type="button" onClick={() => setRepeat((value) => !value)} disabled={!voiceNote} aria-label={translate('repeat')} className={`min-h-14 rounded-2xl border px-5 font-bold ${repeat ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.12)]' : 'bg-[hsl(var(--card))]'} disabled:opacity-40`}>
+                {translate('repeat')}
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center text-sm font-bold text-[hsl(var(--muted-foreground))]">
+            {profileIndex + 1} / {profiles.length}
+          </div>
+        </div>
+      </SectionCard>
+
+      <p className="text-center text-xs text-[hsl(var(--muted-foreground))]">
+        {translate('caregiverEnteredOnly')}
+      </p>
+    </div>
+  );
 }
 
 function Memories({ lang, role }: { lang: Lang; role: Role }) {
