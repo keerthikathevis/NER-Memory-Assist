@@ -779,8 +779,8 @@ function EmergencyHelp({ role }: { lang: Lang; role: Role }) {
   const edit = (item: EmergencyContact) => { setForm(item); setEditing(item); setOpen(true); };
   const openAdd = () => { setForm(empty()); setEditing(null); setOpen(true); };
   return <div className="gentle-in space-y-5">
-    <PageIntro icon={ShieldCheck} title="Emergency & Help" hint="Important contacts, addresses and notes added by the caregiver." />
-    {role !== 'patient' && <button onClick={openAdd} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]"><Plus size={19} />Add contact / note</button>}
+    <PageIntro icon={ShieldCheck} title="Emergency & Help" hint={role === 'patient' ? "View important contacts, addresses and notes added by the caregiver." : "Add important contacts, addresses and notes for the patient."} />
+    {role !== 'patient' && <button onClick={openAdd} className="flex min-h-12 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]"><Plus size={19} />Add emergency information</button>}
     {open && role !== 'patient' && <SectionCard className="pop"><div className="mb-4 flex items-center justify-between"><h3 className="serif text-2xl">{editing ? 'Edit contact / note' : 'Add contact / note'}</h3><button onClick={() => setOpen(false)} aria-label="Close"><X /></button></div><div className="grid gap-4 sm:grid-cols-2">
       <label className="text-sm font-bold">Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
       <label className="text-sm font-bold">Relationship<input value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} placeholder="Daughter, son, caregiver..." className="mt-2 min-h-14 w-full rounded-xl border bg-transparent px-4" /></label>
