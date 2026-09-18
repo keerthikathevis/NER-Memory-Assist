@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   Activity, ArrowLeft, Bell, BellRing, BookOpen, Brain, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3,
   CloudOff, Flower2, Gamepad2, Heart, Home as HomeIcon, Languages, Lightbulb, LockKeyhole,
-  Menu, Mic, Music2, Pause, Pencil, Play, Plus, RotateCcw, Settings as SettingsIcon,
+  Menu, Mic, Pause, Pencil, Play, Plus, RotateCcw, Settings as SettingsIcon,
   Download, ShieldAlert, ShieldCheck, Sparkles, Square, Star, Stethoscope, Sun, Trash2, Trophy, UserRound, UsersRound, Volume1, Volume2,
   Wifi, X, type LucideIcon,
 } from 'lucide-react';
@@ -12,8 +12,6 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { adaptDifficulty, scoreGame, type Difficulty, type GameResult } from '@/lib/adaptive-engine';
-import { demoAudio } from '@/lib/demo-audio';
-import { demoMusicTracks, type MusicCategory, type MusicTrack } from '@/lib/music-data';
 import { culturalItems, type CulturalItem } from '@/lib/game-data';
 import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
@@ -194,7 +192,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
   const nav: [string, CopyKey, LucideIcon][] = [
     ['/patient', 'home', HomeIcon], ['/games', 'games', Gamepad2], ['/medicine', 'medicine', Bell],
-    ['/music', 'music', Music2], ['/memories', 'memories', UsersRound], ['/progress', 'progress', Activity],
+    ['/memories', 'memories', UsersRound], ['/progress', 'progress', Activity],
   ];
 
   const dispatchVoiceCommand = (command: string) => {
@@ -203,7 +201,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     const navigation: Record<string, string> = {
       'go home': '/patient', home: '/patient', 'open games': '/games', games: '/games',
       'open medicine': '/medicine', medicine: '/medicine', 'open memories': '/memories', memories: '/memories',
-      'open music': '/music', music: '/music', 'show progress': '/progress', progress: '/progress',
+'show progress': '/progress', progress: '/progress',
       settings: '/settings',
     };
     const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];
@@ -742,74 +740,6 @@ function Medicine({ lang, role }: { lang: Lang; role: Role }) {
 
 const musicCategoryKeys: Record<MusicCategory, CopyKey> = { favorites: 'favorites', calm: 'calm', memories: 'memoriesCategory', regional: 'regional', instrumental: 'instrumental', nature: 'nature' };
 
-function Music({ lang }: { lang: Lang }) {
-  const translate = (key: CopyKey) => tr(lang, key);
-  const [playing, setPlaying] = useState(false);
-  const [trackId, setTrackId] = useState(demoMusicTracks[0].id);
-  const [repeat, setRepeat] = useState(false);
-  const [volume, setVolume] = useState(() => readStore('ner-music-volume', 0.18));
-  const [category, setCategory] = useState<MusicCategory>('regional');
-  const [favorites, setFavorites] = useState<string[]>(() => readStore('ner-music-favorites', []));
-  const [listenStarted, setListenStarted] = useState(false);
-  const [listenTrack, setListenTrack] = useState<MusicTrack>(demoMusicTracks[0]);
-  const [listenAttempts, setListenAttempts] = useState(0);
-  const [listenStartedAt, setListenStartedAt] = useState(0);
-  const [listenFeedback, setListenFeedback] = useState<'correct' | 'tryAgain' | null>(null);
-  const [listenResult, setListenResult] = useState<GameResult | null>(null);
-  const selectedTrack = demoMusicTracks.find((track) => track.id === trackId) ?? demoMusicTracks[0];
-  const visibleTracks = category === 'favorites' ? demoMusicTracks.filter((track) => favorites.includes(track.id)) : demoMusicTracks.filter((track) => track.category === category);
-  const categories: MusicCategory[] = ['favorites', 'calm', 'memories', 'regional', 'instrumental', 'nature'];
-
-  useEffect(() => () => demoAudio.stop(), []);
-  useEffect(() => { demoAudio.setVolume(volume); writeStore('ner-music-volume', volume); }, [volume]);
-  useEffect(() => {
-    const onCommand = (event: Event) => {
-      const command = (event as CustomEvent<string>).detail;
-      if (command === 'play' || command === 'continue') { setPlaying(true); demoAudio.play(selectedTrack.tone); }
-      if (command === 'pause') { setPlaying(false); demoAudio.pause(); }
-      if (command === 'stop') { setPlaying(false); demoAudio.stop(); }
-      if (command === 'next') { setTrackId(demoMusicTracks[(demoMusicTracks.findIndex((track) => track.id === trackId) + 1) % demoMusicTracks.length].id); setPlaying(true); }
-      if (command === 'previous') { setTrackId(demoMusicTracks[(demoMusicTracks.findIndex((track) => track.id === trackId) - 1 + demoMusicTracks.length) % demoMusicTracks.length].id); setPlaying(true); }
-      if (command === 'repeat') setRepeat((value) => !value);
-      if (command === 'volume up') setVolume((value) => Math.min(1, value + 0.1));
-      if (command === 'volume down') setVolume((value) => Math.max(0, value - 0.1));
-      if (command === 'play favorites') setCategory('favorites');
-    };
-    window.addEventListener('ner-voice-command', onCommand);
-    return () => window.removeEventListener('ner-voice-command', onCommand);
-  }, [selectedTrack, trackId]);
-
-  const togglePlaying = () => {
-    if (playing) { setPlaying(false); demoAudio.pause(); } else { setPlaying(true); demoAudio.play(selectedTrack.tone); }
-  };
-  const chooseTrack = (track: MusicTrack) => { setTrackId(track.id); setPlaying(true); demoAudio.play(track.tone); };
-  const toggleFavorite = () => {
-    const next = favorites.includes(selectedTrack.id) ? favorites.filter((id) => id !== selectedTrack.id) : [...favorites, selectedTrack.id];
-    setFavorites(next); writeStore('ner-music-favorites', next);
-  };
-  const startListenMatch = () => { const next = demoMusicTracks[Math.floor(Math.random() * demoMusicTracks.length)]; setListenTrack(next); setListenAttempts(0); setListenFeedback(null); setListenStartedAt(Date.now()); setListenStarted(true); setListenResult(null); demoAudio.play(next.tone); };
-  const playListenClip = () => { demoAudio.play(listenTrack.tone); window.setTimeout(() => demoAudio.stop(), 2600); };
-  const chooseListenCategory = (choice: Exclude<MusicCategory, 'favorites'>) => {
-    if (!listenStarted || listenFeedback === 'correct') return;
-    const nextAttempts = listenAttempts + 1;
-    setListenAttempts(nextAttempts);
-    if (choice === listenTrack.category) {
-      setListenFeedback('correct');
-      const result: GameResult = { id: `listen-match-${Date.now()}`, gameType: 'listen-match', accuracy: 1 / nextAttempts, completionTime: Math.max(1, Math.floor((Date.now() - listenStartedAt) / 1000)), attempts: nextAttempts, hintsUsed: 0, difficulty: 'easy', score: scoreGame(1 / nextAttempts, 'easy', nextAttempts, 0), createdAt: Date.now() };
-      window.setTimeout(() => { saveGameResult(result); setListenResult(result); setListenStarted(false); demoAudio.stop(); }, 650);
-    } else {
-      setListenFeedback('tryAgain');
-      window.setTimeout(() => setListenFeedback(null), 800);
-    }
-  };
-  if (listenResult) return <div className="gentle-in space-y-5"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} /><GameResultPanel lang={lang} result={listenResult} onAgain={startListenMatch} /><p className="text-center text-sm text-[hsl(var(--muted-foreground))]">{translate('musicResultSaved')}</p></div>;
-  return <div className="gentle-in space-y-5"><PageIntro icon={Music2} title={translate('music')} hint={translate('familiarSoundscape')} />
-    <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><SectionCard className="overflow-hidden bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"><div className="relative flex min-h-80 flex-col justify-between overflow-hidden rounded-2xl bg-[hsl(var(--primary)/.35)] p-6"><div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[25px] border-[hsl(var(--accent)/.6)]" /><div className="relative flex justify-between"><Badge tone="accent">{translate(musicCategoryKeys[selectedTrack.category])}</Badge><Volume2 size={21} /></div><div className="relative"><p className="text-sm opacity-70">{translate('demoAudio')}</p><h3 className="serif mt-1 text-3xl">{selectedTrack.title}</h3><p className="mt-2 text-sm opacity-75">{selectedTrack.description}</p><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/20"><div className={`h-full bg-[hsl(var(--accent))] ${playing ? 'w-2/3' : 'w-1/5'}`} /></div><div className="mt-5 flex items-center justify-center gap-3"><button onClick={() => { const index = (demoMusicTracks.findIndex((track) => track.id === selectedTrack.id) - 1 + demoMusicTracks.length) % demoMusicTracks.length; chooseTrack(demoMusicTracks[index]); }} aria-label={translate('previous')} className="rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={togglePlaying} aria-label={playing ? translate('pause') : translate('play')} className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white">{playing ? <Pause /> : <Play className="ml-1" />}</button><button onClick={() => { const index = (demoMusicTracks.findIndex((track) => track.id === selectedTrack.id) + 1) % demoMusicTracks.length; chooseTrack(demoMusicTracks[index]); }} aria-label={translate('next')} className="rotate-180 rounded-full p-3 hover:bg-white/10"><ArrowLeft size={20} /></button><button onClick={() => { setPlaying(false); demoAudio.stop(); }} aria-label={translate('stop')} className="rounded-full p-3 hover:bg-white/10"><Square size={20} /></button></div></div></div></SectionCard>
-      <SectionCard><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="text-xl font-bold">{translate('playlist')}</h3><button onClick={toggleFavorite} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold" aria-label={translate(favorites.includes(selectedTrack.id) ? 'unfavorite' : 'favorite')}><Star size={18} fill={favorites.includes(selectedTrack.id) ? 'currentColor' : 'none'} />{translate(favorites.includes(selectedTrack.id) ? 'unfavorite' : 'favorite')}</button></div><div className="mb-4 flex flex-wrap gap-2">{categories.map((value) => <button key={value} onClick={() => setCategory(value)} className={`min-h-11 rounded-xl border px-3 text-sm font-bold ${category === value ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}>{translate(musicCategoryKeys[value])}</button>)}</div><div className="space-y-3">{visibleTracks.length ? visibleTracks.map((track) => <button key={track.id} onClick={() => chooseTrack(track)} className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border px-4 text-left ${selectedTrack.id === track.id ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : 'border-[hsl(var(--border))]'}`}><div className="rounded-xl bg-[hsl(var(--secondary))] p-3"><Music2 size={20} /></div><div className="flex-1"><p className="font-bold">{track.title}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">{track.duration} · {translate('demoAudio')}</p></div>{selectedTrack.id === track.id && playing ? <Pause size={18} /> : <Play size={18} />}</button>) : <p className="rounded-2xl bg-[hsl(var(--muted))] p-4 text-sm">{translate('noResults')}</p>}</div><div className="mt-5 flex flex-wrap items-center gap-3"><button onClick={() => { setPlaying(false); demoAudio.stop(); }} className="flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold"><CircleHelp size={17} />{translate('stop')}</button><button onClick={() => setRepeat(!repeat)} className={`flex min-h-12 items-center gap-2 rounded-xl border px-4 font-bold ${repeat ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.1)]' : ''}`}><RotateCcw size={17} />{translate('repeat')}</button><label className="flex min-h-12 items-center gap-2 rounded-xl border px-3"><Volume1 size={18} /><input aria-label={translate('volume')} type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => setVolume(Number(event.target.value))} /></label></div></SectionCard></div>
-    <SectionCard><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge tone="accent">{translate('listenMatch')}</Badge><h3 className="serif mt-2 text-3xl">{translate('listenMatch')}</h3><p className="mt-1 text-[hsl(var(--muted-foreground))]">{translate('listenMatchHint')}</p></div>{listenStarted && <Badge tone="muted">{translate('attempts')}: {listenAttempts}</Badge>}</div>{!listenStarted ? <button onClick={startListenMatch} className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]"><Play size={20} />{translate('start')}</button> : <div className="mt-5 space-y-4"><button onClick={playListenClip} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--secondary))] font-bold"><Volume2 size={20} />{translate('playClip')}</button><p className="font-bold">{translate('matchCategory')}</p><div className="grid gap-3 sm:grid-cols-3">{(['calm', 'regional', 'nature'] as const).map((choice) => <button key={choice} onClick={() => chooseListenCategory(choice)} className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border p-3 font-bold"><Music2 size={22} className="text-[hsl(var(--primary))]" />{translate(musicCategoryKeys[choice])}</button>)}</div>{listenFeedback && <div className={`rounded-2xl p-4 text-center font-bold ${listenFeedback === 'correct' ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]'}`}>{translate(listenFeedback)}</div>}</div>}</SectionCard>
-    <p className="text-center text-xs text-[hsl(var(--muted-foreground))]">{translate('audioDemoNote')}</p>
-  </div>;
-}
 
 function Memories({ lang, role }: { lang: Lang; role: Role }) {
   const translate = (key: CopyKey) => tr(lang, key);
@@ -845,10 +775,8 @@ function StatCard({ label, value, detail }: { label: string; value: string; deta
 function Caregiver({ lang }: { lang: Lang }) {
   const translate = (key: CopyKey) => tr(lang, key);
   const allResults = getGameResults();
-  const gameResults = allResults.filter((item) => item.gameType !== 'listen-match');
-  const musicResults = allResults.filter((item) => item.gameType === 'listen-match');
+  const gameResults = allResults;
   const recentGames = gameResults.slice(-5).reverse();
-  const recentMusic = musicResults.slice(-5).reverse();
   const accuracy = gameResults.length ? Math.round(gameResults.slice(-5).reduce((sum, item) => sum + item.accuracy, 0) / Math.min(gameResults.length, 5) * 100) : 0;
   const schedules = getMedicineSchedules();
   const events = getMedicineEvents();
@@ -862,7 +790,7 @@ function Caregiver({ lang }: { lang: Lang }) {
   return <div className="gentle-in space-y-5"><PageIntro icon={Heart} title={translate('caregiverView')} hint={translate('caregiverHint')} /><div className="mb-1 flex items-center justify-between rounded-3xl bg-[hsl(var(--primary))] p-5 text-[hsl(var(--primary-foreground))]"><div><p className="text-sm opacity-75">{translate('patientName')}</p><p className="serif text-3xl">Amina Das</p></div><div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-xl font-bold">AD</div></div>
     {repeatedMisses.length > 0 && <div className="flex items-start gap-3 rounded-2xl border border-[hsl(var(--accent)/.45)] bg-[hsl(var(--accent)/.12)] p-4"><ShieldAlert className="mt-0.5 text-[hsl(var(--accent))]" /><div><p className="font-bold">{translate('repeatedMisses')}</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{repeatedMisses.map((medicine) => medicine.name).join(', ')} · {translate('activityOnly')}</p></div></div>}
     <SectionCard><div className="flex items-center justify-between gap-3"><h3 className="text-xl font-bold">{translate('medicineDashboard')}</h3><Link href="/medicine" className="min-h-11 rounded-xl bg-[hsl(var(--secondary))] px-4 py-3 text-sm font-bold">{translate('editMedicine')}</Link></div><div className="mt-5 grid gap-3 sm:grid-cols-3"><CareRow icon={CheckCircle2} label={translate('takenCount')} value={String(takenCount)} /><CareRow icon={Clock3} label={translate('pendingCount')} value={String(pendingCount)} /><CareRow icon={ShieldAlert} label={translate('missedCount')} value={String(missedCount)} /></div><div className="mt-4 flex flex-wrap gap-2">{todayMedicines.map((medicine) => <Badge key={medicine.id} tone={latestMedicineStatus(medicine.id, events, today) === 'missed' ? 'accent' : 'muted'}>{medicine.name} · {medicine.time}</Badge>)}</div><p className="mt-4 text-sm text-[hsl(var(--muted-foreground))]">{translate('recentAdherence')}: {events.slice(-5).reverse().map((event) => `${event.status} · ${new Date(event.timestamp).toLocaleDateString(lang)}`).join(' · ') || translate('noResults')}</p></SectionCard>
-    <div className="grid gap-5 md:grid-cols-2"><SectionCard><h3 className="text-xl font-bold">{translate('musicDashboard')}</h3><div className="mt-5 space-y-3"><CareRow icon={Music2} label={translate('musicActivities')} value={String(musicResults.length)} /><CareRow icon={Trophy} label={translate('listenMatchScores')} value={recentMusic[0] ? String(recentMusic[0].score) : '—'} /></div>{recentMusic.length > 0 && <div className="mt-4 space-y-2">{recentMusic.slice(0, 3).map((item) => <div key={item.id} className="flex items-center justify-between rounded-2xl bg-[hsl(var(--muted)/.55)] p-3 text-sm"><span>{translate('listenMatch')}</span><span>{Math.round(item.accuracy * 100)}% · {item.score}</span></div>)}</div>}</SectionCard><SectionCard><h3 className="text-xl font-bold">{translate('memoriesDashboard')}</h3><div className="mt-5 space-y-3"><CareRow icon={UsersRound} label={translate('memoryProfilesActive')} value={`${getMemoryProfiles().length}/25`} /></div><Link href="/memories" className="mt-5 flex min-h-12 items-center justify-center rounded-xl border font-bold">{translate('editMemory')}</Link></SectionCard></div>
+
     <div className="grid gap-5 md:grid-cols-2"><SectionCard><h3 className="text-xl font-bold">{translate('gamesDashboard')}</h3><div className="mt-4 space-y-3">{recentGames.length ? recentGames.slice(0, 4).map((item) => <div key={item.id} className="flex items-center justify-between rounded-2xl bg-[hsl(var(--muted)/.55)] p-3"><span className="text-sm font-bold">{item.gameType.replaceAll('-', ' ')}</span><span className="text-sm text-[hsl(var(--muted-foreground))]">{Math.round(item.accuracy * 100)}% · {item.score}</span></div>) : <p className="text-sm text-[hsl(var(--muted-foreground))]">{translate('noResults')}</p>}<CareRow icon={Activity} label={translate('recentAccuracy')} value={`${accuracy}%`} /></div></SectionCard><SectionCard><h3 className="text-xl font-bold">{translate('activitiesToday')}</h3><div className="mt-5 space-y-4"><CareRow icon={Gamepad2} label={translate('gamesCompletedToday')} value={String(gameResults.length)} /><CareRow icon={Trophy} label={translate('latestScores')} value={recentGames[0] ? String(recentGames[0].score) : '—'} /><CareRow icon={UsersRound} label={translate('memoryCount')} value={`${getMemoryProfiles().length}/25`} /></div><Link href="/patient" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] font-bold text-[hsl(var(--primary-foreground))]">{translate('viewPatient')}<ChevronRight size={18} /></Link></SectionCard></div>
   </div>;
 }
@@ -885,7 +813,7 @@ function Settings({ lang, role, setLang, setRole }: { lang: Lang; role: Role; se
 
 function Router() {
   const { lang, role, setLang, setRole } = useAppPrefs();
-  return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><AppFrame lang={lang} role={role}><Switch><Route path="/patient"><PatientHome lang={lang} /></Route><Route path="/games"><Games lang={lang} /></Route><Route path="/medicine"><Medicine lang={lang} role={role} /></Route><Route path="/music"><Music lang={lang} /></Route><Route path="/memories"><Memories lang={lang} role={role} /></Route><Route path="/progress"><Progress lang={lang} /></Route><Route path="/caregiver"><Caregiver lang={lang} /></Route><Route path="/healthcare"><Healthcare lang={lang} /></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><Link href="/patient">{tr(lang, 'goHome')}</Link></Route></Switch></AppFrame></Route></Switch>;
+  return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><AppFrame lang={lang} role={role}><Switch><Route path="/patient"><PatientHome lang={lang} /></Route><Route path="/games"><Games lang={lang} /></Route><Route path="/medicine"><Medicine lang={lang} role={role} /></Route><Route path="/memories"><Memories lang={lang} role={role} /></Route><Route path="/progress"><Progress lang={lang} /></Route><Route path="/caregiver"><Caregiver lang={lang} /></Route><Route path="/healthcare"><Healthcare lang={lang} /></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><Link href="/patient">{tr(lang, 'goHome')}</Link></Route></Switch></AppFrame></Route></Switch>;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
