@@ -766,6 +766,19 @@ function Memories({ lang, role }: { lang: Lang; role: Role }) {
 
 function EmergencyHelp({ role }: { lang: Lang; role: Role }) {
   const [contacts, setContacts] = useState<EmergencyContact[]>(() => getEmergencyContacts());
+  useEffect(() => {
+    const reloadContacts = () => setContacts(getEmergencyContacts());
+    reloadContacts();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'ner-emergency-contacts') reloadContacts();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('ner-sync-updated', reloadContacts);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('ner-sync-updated', reloadContacts);
+    };
+  }, []);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<EmergencyContact | null>(null);
   const empty = (): EmergencyContact => ({ id: '', name: '', relationship: '', phone: '', address: '', note: '', isEmergency: false });
