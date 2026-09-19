@@ -19,7 +19,7 @@ import { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/off
 import { getSpeechRecognitionLocale } from '@/lib/voiceLocales';
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
-import { clearLocalDataMirror, clearMedicineData, getEmergencyContacts, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type EmergencyContact, type MemoryProfile, writeStore } from '@/lib/storage';
+import { clearLocalDataMirror, clearMedicineData, getEmergencyContacts, saveEmergencyContacts, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type EmergencyContact, type MemoryProfile, writeStore } from '@/lib/storage';
 import { clearSyncQueue, getSyncQueue, resolveSyncConflict, syncService, type SyncRecord } from '@/lib/sync-service';
 
 const queryClient = new QueryClient();
