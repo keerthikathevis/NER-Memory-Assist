@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ner-memory-assist-shell-v4';
-const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v1';
+const CACHE_NAME = 'ner-memory-assist-shell-v5';
+const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v2';
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg', '/favicon.svg'];
 
 const CULTURAL_IMAGE_URLS = [
@@ -66,7 +66,27 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET' || url.pathname.startsWith('/api/')) return;
+  if (request.method !== 'GET') return;
+
+  if (url.origin === self.location.origin && url.pathname === '/api/cultural-image') {
+    event.respondWith(
+      caches.open(CULTURAL_IMAGE_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+
+        try {
+          const response = await fetch(request);
+          if (response.ok) event.waitUntil(cache.put(request, response.clone()));
+          return response;
+        } catch {
+          return Response.error();
+        }
+      }),
+    );
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/')) return;
 
   // Cultural images are cross-origin resources. Cache them so the same
   // real photos remain available after the device loses connectivity.
