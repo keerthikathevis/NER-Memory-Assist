@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ner-memory-assist-shell-v6';
-const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v2';
+const CACHE_NAME = 'ner-memory-assist-shell-v7';
+const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v3';
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg', '/favicon.svg'];
 
 const CULTURAL_IMAGE_URLS = [
