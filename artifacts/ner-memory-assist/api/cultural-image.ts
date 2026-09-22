@@ -1,5 +1,5 @@
 const CULTURAL_IMAGES: Record<string, string> = {
-  kamakhya: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Kamakhya%20Temple%20in%20Assam.jpg?width=900',
+  kamakhya: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Kamakhya%20Temple%20Assam%20India.jpg?width=900',
   umananda: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Umananda%20Temple%2C%20Guwahati.jpg?width=900',
   navagraha: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Navagraha%20Temple%2C%20Guwahati%2001.jpg?width=900',
   hayagriva: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Hayagriva%20Madhav%20temple.jpg?width=900',
