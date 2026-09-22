@@ -437,7 +437,7 @@ function JigsawGame({ lang, gameType }: { lang: Lang; gameType: 'personalized-ji
   const puzzleCols = pieceCount === 4 ? 2 : 3;
   const puzzleRows = pieceCount === 4 ? 2 : pieceCount === 6 ? 2 : 3;
   const pieceStyle = (piece: number) => ({
-    backgroundImage: puzzleImage ? `url(${puzzleImage})` : 'none',
+    backgroundImage: puzzleImage ? `url("${puzzleImage}")` : 'none',
     backgroundSize: `${puzzleCols * 100}% ${puzzleRows * 100}%`,
     backgroundPosition: `${(piece % puzzleCols) * (100 / Math.max(puzzleCols - 1, 1))}% ${Math.floor(piece / puzzleCols) * (100 / Math.max(puzzleRows - 1, 1))}%`,
     backgroundRepeat: 'no-repeat',
