@@ -121,7 +121,7 @@ const culturalTitleLabels: Record<Lang, Record<string, string>> = {
 const localizedCulturalTitle = (lang: Lang, title: string) =>
   culturalTitleLabels[lang]?.[title] ?? culturalTitleLabels.en[title] ?? title;
 
-const culturalImage = (item: CulturalItem) => `/cultural-images/${item.id}.svg`;
+const culturalImage = (item: CulturalItem) => item.imageUrl ?? item.imageDataUrl;
 const colors: Record<CulturalItem['color'], string> = {
   saffron: 'bg-[hsl(35_75%_76%)]',
   teal: 'bg-[hsl(174_35%_72%)]',
