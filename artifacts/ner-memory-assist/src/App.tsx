@@ -675,23 +675,51 @@ function Medicine({ lang, role }: { lang: Lang; role: Role }) {
   }, [today, todaySchedules, events]);
 
   useEffect(() => {
-    const checkReminders = () => {
+    let cancelled = false;
+    const checkReminders = async () => {
       const now = new Date();
-      todaySchedules.forEach((medicine) => {
+      for (const medicine of todaySchedules) {
         const dueAt = new Date(`${today}T${medicine.time}:00`).getTime();
         const status = latestMedicineStatus(medicine.id, events, today);
-        if (now.getTime() < dueAt || status === 'taken' || status === 'missed') return;
-        const key = `ner-notified-${medicine.id}-${today}`;
-        if (localStorage.getItem(key)) return;
-        const sent = sendMedicineNotification(medicine, { title: translate('notificationTitle'), scheduled: translate('scheduled'), taken: translate('taken'), later: translate('later') });
-        if (!sent) setFallbackReminder(true);
-        localStorage.setItem(key, '1');
-      });
+        if (now.getTime() < dueAt || status === 'taken' || status === 'missed') continue;
+        const key = `ner-notified-${medicine.id}-${today}-${medicine.time}`;
+        if (localStorage.getItem(key)) continue;
+        const sent = await sendMedicineNotification(medicine, {
+          title: translate('notificationTitle'),
+          scheduled: translate('scheduled'),
+          taken: translate('taken'),
+          later: translate('later'),
+        });
+        if (cancelled) return;
+        if (!sent) {
+          setFallbackReminder(true);
+        } else {
+          localStorage.setItem(key, '1');
+        }
+      }
     };
-    checkReminders();
-    const timer = window.setInterval(checkReminders, 60000);
-    return () => window.clearInterval(timer);
+    void checkReminders();
+    const timer = window.setInterval(() => { void checkReminders(); }, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [lang, today, todaySchedules, events]);
+
+  useEffect(() => {
+    const handleNotificationAction = (event: MessageEvent<{ type?: string; action?: string; medicineId?: string }>) => {
+      if (event.data?.type !== 'MEDICINE_NOTIFICATION_ACTION' || !event.data.medicineId) return;
+      const medicine = todaySchedules.find((item) => item.id === event.data.medicineId);
+      if (!medicine) return;
+      if (event.data.action === 'taken') {
+        record(medicine, 'taken');
+      } else if (event.data.action === 'later') {
+        record(medicine, 'delayed');
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handleNotificationAction);
+    return () => navigator.serviceWorker?.removeEventListener('message', handleNotificationAction);
+  }, [todaySchedules, events]);
 
   const record = (medicine: MedicineSchedule, status: Exclude<MedicineEventStatus, 'scheduled'>) => {
     const event = { id: `${status}-${medicine.id}-${Date.now()}`, medicineId: medicine.id, status, timestamp: new Date().toISOString(), scheduledFor: today };

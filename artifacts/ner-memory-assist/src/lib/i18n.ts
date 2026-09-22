@@ -740,8 +740,13 @@ const voiceAliases: Partial<Record<Lang, Record<VoiceCommand, string[]>>> = {
   },
 };
 
+const voicePhraseMatches = (text: string, phrase: string) =>
+  text === phrase || text.startsWith(phrase + ' ') || text.endsWith(' ' + phrase) || text.includes(' ' + phrase + ' ');
+
 export const resolveVoiceCommand = (lang: Lang, input: string): VoiceCommand | null => {
-  const normalized = input.toLowerCase().replace(/[.,!?]/g, '').trim();
-  const aliases = voiceAliases[lang] ?? voiceAliases.en!;
-  return (Object.entries(aliases) as [VoiceCommand, string[]][]).find(([, phrases]) => phrases.some((phrase) => normalized.includes(phrase)))?.[0] ?? null;
+  const normalized = input.toLocaleLowerCase().replace(/[.,!?;:()[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
+  const aliases = { ...(voiceAliases.en ?? {}), ...(voiceAliases[lang] ?? {}) };
+  return (Object.entries(aliases) as [VoiceCommand, string[]][])
+    .sort(([, a], [, b]) => Math.max(...b.map((phrase) => phrase.length)) - Math.max(...a.map((phrase) => phrase.length)))
+    .find(([, phrases]) => phrases.some((phrase) => voicePhraseMatches(normalized, phrase.toLocaleLowerCase())))?.[0] ?? null;
 };

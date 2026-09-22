@@ -34,7 +34,11 @@ export const isScheduledForDate = (medicine: MedicineSchedule, date = new Date()
   const current = dateKey(date);
   if (!medicine.active || current < medicine.startDate || (medicine.endDate && current > medicine.endDate)) return false;
   if (medicine.frequency === 'daily') return true;
-  if (medicine.frequency === 'weekly') return date.getDay() === new Date(`${medicine.startDate}T00:00:00`).getDay();
+  if (medicine.frequency === 'weekly') {
+    const [year, month, day] = medicine.startDate.split('-').map(Number);
+    const startDay = new Date(year, month - 1, day).getDay();
+    return date.getDay() === startDay;
+  }
   return date.getDay() > 0 && date.getDay() < 6;
 };
 

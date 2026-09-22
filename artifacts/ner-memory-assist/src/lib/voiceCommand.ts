@@ -13,13 +13,23 @@ const commandAliases: Record<Lang, Record<string, string>> = {
   ne: { 'मद्दत':'HELP', 'सहायता':'HELP', 'दोहोऱ्याउनुहोस्':'REPEAT', 'सुरु':'START', 'रोक्नुहोस्':'PAUSE', 'बन्द':'STOP', 'जारी':'CONTINUE', 'गृह':'HOME', 'सजिलो':'EASIER', 'गाह्रो':'HARDER', 'खेल':'OPEN_GAMES', 'औषधि':'OPEN_MEDICINE', 'संगीत':'OPEN_MUSIC', 'स्मृति':'OPEN_MEMORIES', 'प्रगति':'OPEN_PROGRESS', 'सेटिङ':'OPEN_SETTINGS' },
 };
 
-const normalize = (value: string) => value.trim().toLocaleLowerCase();
+const normalize = (value: string) => value
+  .normalize('NFKC')
+  .toLocaleLowerCase()
+  .replace(/[.,!?;:()[\]{}]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const matchesPhrase = (text: string, phrase: string) =>
+  text === phrase || text.startsWith(phrase + ' ') || text.endsWith(' ' + phrase) || text.includes(' ' + phrase + ' ');
 
 export function resolveMultilingualVoiceCommand(lang: Lang, transcript: string): string | undefined {
   const text = normalize(transcript);
-  const aliases = commandAliases[lang] ?? {};
-  for (const [phrase, command] of Object.entries(aliases)) {
-    if (text === phrase || text.includes(phrase)) return command;
+  if (!text) return undefined;
+  const aliases = { ...commandAliases.en, ...(commandAliases[lang] ?? {}) };
+  const ordered = Object.entries(aliases).sort(([a], [b]) => b.length - a.length);
+  for (const [phrase, command] of ordered) {
+    if (matchesPhrase(text, normalize(phrase))) return command;
   }
   return undefined;
 }
