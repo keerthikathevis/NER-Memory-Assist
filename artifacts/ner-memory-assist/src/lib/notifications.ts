@@ -1,4 +1,4 @@
-import type { MedicineSchedule } from './medicine';
+import { dateKey, type MedicineSchedule } from './medicine';
 
 export type NotificationPermissionState = 'granted' | 'denied' | 'default' | 'unsupported';
 
@@ -25,7 +25,7 @@ export const sendMedicineNotification = async (
 ): Promise<boolean> => {
   if (notificationPermission() !== 'granted') return false;
 
-  const scheduledFor = new Date().toISOString().slice(0, 10);
+  const scheduledFor = dateKey();
   const payload: NotificationPayload = {
     title: labels.title,
     body: medicine.name + ' · ' + labels.scheduled + ' ' + medicine.time,
