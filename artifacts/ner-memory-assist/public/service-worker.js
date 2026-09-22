@@ -3,22 +3,22 @@ const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v2';
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg', '/favicon.svg'];
 
 const CULTURAL_IMAGE_URLS = [
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Kamakhya%20Temple%20in%20Assam.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Umananda%20Mandir.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/NAVAGRAHA%20TEMPLE%20GUWAHATI.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Hayagriva%20Madhav%20temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Nartiang%20Durga%20temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Tripura%20sundari%20temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/TawangMonastery.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Madan%20Kamdev%20Temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Dirgheswari%20Temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Loktak%20Lake%20View.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Rhinoceros%20Kaziranga.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Mawlynnong.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Great%20hornbills%20-%20pride%20of%20Nagaland.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Bamboo%20basket.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Assamese%20pitha.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Bihu%20in%20Assam.jpg?width=900',
+  '/api/cultural-image?id=kamakhya',
+  '/api/cultural-image?id=umananda',
+  '/api/cultural-image?id=navagraha',
+  '/api/cultural-image?id=hayagriva',
+  '/api/cultural-image?id=nartiang',
+  '/api/cultural-image?id=tripurasundari',
+  '/api/cultural-image?id=tawang',
+  '/api/cultural-image?id=madan',
+  '/api/cultural-image?id=dirgheswari',
+  '/api/cultural-image?id=loktak',
+  '/api/cultural-image?id=kaziranga',
+  '/api/cultural-image?id=mawlynnong',
+  '/api/cultural-image?id=hornbill',
+  '/api/cultural-image?id=bamboo',
+  '/api/cultural-image?id=pitha',
+  '/api/cultural-image?id=bihu',
 ];
 
 async function cacheCulturalImages() {
@@ -87,28 +87,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith('/api/')) return;
-
-  // Cultural images are cross-origin resources. Cache them so the same
-  // real photos remain available after the device loses connectivity.
-  if (url.origin !== self.location.origin && url.hostname === 'commons.wikimedia.org') {
-    event.respondWith(
-      caches.open(CULTURAL_IMAGE_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        if (cached) return cached;
-
-        try {
-          const response = await fetch(request);
-          if (response.type === 'opaque' || response.ok) {
-            event.waitUntil(cache.put(request, response.clone()));
-          }
-          return response;
-        } catch {
-          return Response.error();
-        }
-      }),
-    );
-    return;
-  }
 
   if (url.origin !== self.location.origin) return;
 
