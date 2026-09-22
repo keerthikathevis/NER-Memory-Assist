@@ -62,6 +62,29 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+self.addEventListener('notificationclick', (event) => {
+  const action = event.action;
+  const data = event.notification?.data ?? {};
+  event.notification.close();
+
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const target = clientsList[0];
+    if (target) {
+      target.postMessage({
+        type: 'MEDICINE_NOTIFICATION_ACTION',
+        action: action || 'open',
+        medicineId: data.medicineId,
+        scheduledFor: data.scheduledFor,
+        time: data.time,
+      });
+      await target.focus();
+      return;
+    }
+    await self.clients.openWindow('/medicine');
+  })());
+});
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
