@@ -60,11 +60,6 @@ export const sendMedicineNotification = async (
     data: { medicineId: medicine.id, scheduledFor, time: medicine.time },
   };
 
-  const actions = [
-    { action: 'taken', title: labels.taken },
-    { action: 'later', title: labels.later },
-  ];
-
   try {
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.ready;
@@ -76,7 +71,6 @@ export const sendMedicineNotification = async (
         badge: '/icon-192.svg',
         ...(imageUrl ? { image: imageUrl } : {}),
         requireInteraction: true,
-        actions,
       };
 
       try {
@@ -89,7 +83,6 @@ export const sendMedicineNotification = async (
           icon: '/icon-192.svg',
           badge: '/icon-192.svg',
           requireInteraction: true,
-          actions,
         });
       }
 
