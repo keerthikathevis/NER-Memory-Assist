@@ -1,5 +1,6 @@
 const CACHE_NAME = 'ner-memory-assist-shell-v7';
 const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v5';
+const MEDICINE_IMAGE_CACHE = 'ner-memory-medicine-images-v1';
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg', '/favicon.svg'];
 
 const CULTURAL_IMAGE_URLS = [
@@ -27,9 +28,7 @@ async function cacheCulturalImages() {
     CULTURAL_IMAGE_URLS.map(async (url) => {
       try {
         const response = await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
-        if (response.type === 'opaque' || response.ok) {
-          await cache.put(url, response);
-        }
+        if (response.type === 'opaque' || response.ok) await cache.put(url, response);
       } catch {
         // One unavailable image must not prevent the PWA from installing.
       }
@@ -51,7 +50,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME && key !== CULTURAL_IMAGE_CACHE)
+          .filter((key) => ![CACHE_NAME, CULTURAL_IMAGE_CACHE, MEDICINE_IMAGE_CACHE].includes(key))
           .map((key) => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),
@@ -99,12 +98,9 @@ self.addEventListener('fetch', (event) => {
       caches.open(CULTURAL_IMAGE_CACHE).then(async (cache) => {
         const cached = await cache.match(request);
         if (cached) return cached;
-
         try {
           const response = await fetch(request, { mode: 'no-cors', cache: 'no-cache' });
-          if (response.ok || response.type === 'opaque') {
-            event.waitUntil(cache.put(request, response.clone()));
-          }
+          if (response.ok || response.type === 'opaque') event.waitUntil(cache.put(request, response.clone()));
           return response;
         } catch {
           return Response.error();
@@ -114,8 +110,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/medicine-images/')) {
+    event.respondWith(
+      caches.open(MEDICINE_IMAGE_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        return cached || Response.error();
+      }),
+    );
+    return;
+  }
 
+  if (url.pathname.startsWith('/api/')) return;
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
