@@ -27,7 +27,6 @@ export const sendMedicineNotification = async (
 
   const scheduledFor = dateKey();
   const photo = medicine.photoDataUrl?.trim();
-  const notificationImage = photo || '/icon-192.svg';
 
   const payload: NotificationPayload = {
     title: labels.title,
@@ -36,32 +35,60 @@ export const sendMedicineNotification = async (
     data: { medicineId: medicine.id, scheduledFor, time: medicine.time },
   };
 
+  const actions = [
+    { action: 'taken', title: labels.taken },
+    { action: 'later', title: labels.later },
+  ];
+
   try {
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(payload.title, {
-        body: payload.body,
-        tag: payload.tag,
-        data: payload.data,
-        image: notificationImage,
-        icon: notificationImage,
-        badge: '/icon-192.svg',
-        requireInteraction: true,
-        actions: [
-          { action: 'taken', title: labels.taken },
-          { action: 'later', title: labels.later },
-        ],
-      });
+
+      try {
+        await registration.showNotification(payload.title, {
+          body: payload.body,
+          tag: payload.tag,
+          data: payload.data,
+          icon: '/icon-192.svg',
+          badge: '/icon-192.svg',
+          ...(photo ? { image: photo } : {}),
+          requireInteraction: true,
+          actions,
+        });
+      } catch {
+        // Some browsers reject data-URL notification images. Never let the
+        // medicine photo prevent the reminder itself from appearing.
+        await registration.showNotification(payload.title, {
+          body: payload.body,
+          tag: payload.tag,
+          data: payload.data,
+          icon: '/icon-192.svg',
+          badge: '/icon-192.svg',
+          requireInteraction: true,
+          actions,
+        });
+      }
+
       return true;
     }
 
-    new Notification(payload.title, {
-      body: payload.body,
-      tag: payload.tag,
-      data: payload.data,
-      image: notificationImage,
-      icon: notificationImage,
-    });
+    try {
+      new Notification(payload.title, {
+        body: payload.body,
+        tag: payload.tag,
+        data: payload.data,
+        icon: '/icon-192.svg',
+        ...(photo ? { image: photo } : {}),
+      });
+    } catch {
+      new Notification(payload.title, {
+        body: payload.body,
+        tag: payload.tag,
+        data: payload.data,
+        icon: '/icon-192.svg',
+      });
+    }
+
     return true;
   } catch {
     return false;
