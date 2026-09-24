@@ -26,6 +26,9 @@ export const sendMedicineNotification = async (
   if (notificationPermission() !== 'granted') return false;
 
   const scheduledFor = dateKey();
+  const photo = medicine.photoDataUrl?.trim();
+  const notificationImage = photo || '/icon-192.svg';
+
   const payload: NotificationPayload = {
     title: labels.title,
     body: medicine.name + ' · ' + labels.scheduled + ' ' + medicine.time,
@@ -40,7 +43,8 @@ export const sendMedicineNotification = async (
         body: payload.body,
         tag: payload.tag,
         data: payload.data,
-        icon: '/icon-192.svg',
+        image: notificationImage,
+        icon: notificationImage,
         badge: '/icon-192.svg',
         requireInteraction: true,
         actions: [
@@ -55,6 +59,8 @@ export const sendMedicineNotification = async (
       body: payload.body,
       tag: payload.tag,
       data: payload.data,
+      image: notificationImage,
+      icon: notificationImage,
     });
     return true;
   } catch {
