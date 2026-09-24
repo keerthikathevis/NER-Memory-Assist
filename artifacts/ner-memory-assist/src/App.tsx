@@ -905,11 +905,60 @@ function Settings({ lang, role, setLang, setRole }: { lang: Lang; role: Role; se
   return <div className="gentle-in max-w-3xl"><PageIntro icon={SettingsIcon} title={translate('settings')} hint={translate('privacy')} /><div className="space-y-4"><SectionCard><div className="flex items-center gap-3"><Languages className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('language')}</h3></div><select value={lang} onChange={(event) => setLang(event.target.value as Lang)} className="min-h-12 rounded-xl border bg-transparent px-3">{languageOptions.map((item) => <option key={item.id} value={item.id}>{item.native}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><UserRound className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('role')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{translate(role)}</p></div><select value={role} onChange={(event) => setRole(event.target.value as Role)} className="min-h-12 rounded-xl border bg-transparent px-3">{(['patient', 'caregiver', 'healthcare'] as Role[]).map((value) => <option key={value} value={value}>{translate(value)}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><BookOpen className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('textSize')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{large ? translate('large') : translate('normal')}</p></div><button onClick={toggleLarge} className="min-h-12 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{large ? translate('normal') : translate('large')}</button></div></SectionCard><SectionCard><div className="flex items-center gap-3"><LockKeyhole className="text-[hsl(var(--primary))]" /><div><h3 className="font-bold">{translate('privacyTitle')}</h3><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{translate('privacy')}</p></div></div></SectionCard><button onClick={reset} className="min-h-14 w-full rounded-2xl border border-[hsl(var(--destructive)/.35)] font-bold text-[hsl(var(--destructive))]">{translate('reset')}</button></div></div>;
 }
 
+function MedicineNotificationScheduler({ lang }: { lang: Lang }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkReminders = async () => {
+      const schedules = getMedicineSchedules();
+      const events = getMedicineEvents();
+      const today = dateKey();
+      const todaySchedules = schedules
+        .filter((medicine) => isScheduledForDate(medicine))
+        .sort((a, b) => a.time.localeCompare(b.time));
+
+      const now = new Date();
+
+      for (const medicine of todaySchedules) {
+        const dueAt = new Date(`${today}T${medicine.time}:00`).getTime();
+        const status = latestMedicineStatus(medicine.id, events, today);
+
+        if (now.getTime() < dueAt || status === 'taken' || status === 'missed') continue;
+
+        const key = `ner-notified-${medicine.id}-${today}-${medicine.time}`;
+        if (localStorage.getItem(key)) continue;
+
+        const sent = await sendMedicineNotification(medicine, {
+          title: translate('notificationTitle'),
+          scheduled: translate('scheduled'),
+          taken: translate('taken'),
+          later: translate('later'),
+        });
+
+        if (cancelled) return;
+        if (sent) localStorage.setItem(key, '1');
+      }
+    };
+
+    void checkReminders();
+    const timer = window.setInterval(() => { void checkReminders(); }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [lang]);
+
+  return null;
+}
+
 function Router() {
   const { lang, role, setLang, setRole } = useAppPrefs();
   return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><AppFrame lang={lang} role={role}><Switch><Route path="/patient"><PatientHome lang={lang} /></Route><Route path="/games"><Games lang={lang} /></Route><Route path="/medicine"><Medicine lang={lang} role={role} /></Route><Route path="/memories"><Memories lang={lang} role={role} /></Route><Route path="/emergency"><EmergencyHelp lang={lang} role={role} /></Route><Route path="/progress"><Progress lang={lang} /></Route><Route path="/caregiver"><Caregiver lang={lang} /></Route><Route path="/healthcare"><Healthcare lang={lang} /></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><Link href="/patient">{tr(lang, 'goHome')}</Link></Route></Switch></AppFrame></Route></Switch>;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
-function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedErrorBoundary><Router /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
+function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedErrorBoundary><MedicineNotificationScheduler lang={readStore('ner-lang', 'en' as Lang)} /><Router /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
 export default App;
