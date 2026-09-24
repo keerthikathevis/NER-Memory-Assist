@@ -1,24 +1,24 @@
 const CACHE_NAME = 'ner-memory-assist-shell-v7';
-const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v4';
+const CULTURAL_IMAGE_CACHE = 'ner-memory-cultural-images-v5';
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg', '/favicon.svg'];
 
 const CULTURAL_IMAGE_URLS = [
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Kamakhya%20Temple%20Assam%20India.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Umananda%20Temple%2C%20Guwahati.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Navagraha%20Temple%2C%20Guwahati%2001.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Hayagriva%20Madhav%20temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Nartiang%20Durga%20Temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Tripura%20sundari%20temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/TawangMonastery.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Madan%20Kamdev%20Temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Dirgheswari%20Temple.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Loktak%20Lake%20View.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Rhinoceros%20Kaziranga.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Mawlynnong.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Great%20Indian%20Hornbill.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/%22Duli%22%20-%20a%20large%20bamboo%20basket%20used%20for%20storing%20seeds%20of%20paddy%2C%20mustard%2C%20etc.%2C%20commonly%20used%20in%20Assam%2002.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/Assamese%20pitha.jpg?width=900',
-  'https://commons.wikimedia.org/wiki/Special:Redirect/file/The%20Bihu%20dance%20in%20Assam.jpg?width=900',
+  '/cultural-images/kamakhya.jpg',
+  '/cultural-images/umananda.jpg',
+  '/cultural-images/navagraha.jpg',
+  '/cultural-images/hayagriva.jpg',
+  '/cultural-images/nartiang.jpg',
+  '/cultural-images/tripurasundari.jpg',
+  '/cultural-images/tawang.jpg',
+  '/cultural-images/madan.jpg',
+  '/cultural-images/dirgheswari.jpg',
+  '/cultural-images/loktak.jpg',
+  '/cultural-images/kaziranga.jpg',
+  '/cultural-images/mawlynnong.jpg',
+  '/cultural-images/hornbill.jpg',
+  '/cultural-images/bamboo.jpg',
+  '/cultural-images/pitha.jpg',
+  '/cultural-images/bihu.jpg',
 ];
 
 async function cacheCulturalImages() {
