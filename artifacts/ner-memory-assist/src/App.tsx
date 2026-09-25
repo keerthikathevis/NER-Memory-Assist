@@ -257,8 +257,11 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     recognitionRef.current = recognition;
     const recognitionLocale = getSpeechRecognitionLocale(lang);
     recognition.lang = recognitionLocale;
+    // Some Chromium builds only deliver the useful transcript while the
+    // recognition session is still active. Keep interim results enabled so
+    // commands can be acted on immediately instead of waiting for onend.
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     try {
       (recognition as SpeechRecognitionLike & { maxAlternatives?: number }).maxAlternatives = 3;
     } catch {}
@@ -287,13 +290,17 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
       recognitionRef.current = null;
       setListening(false);
       const error = event as { error?: string } | undefined;
-      if (error?.error !== 'no-speech') {
+      if (error?.error === 'no-speech') {
+        setHeardTranscript('No speech was recognized. Please tap the mic and speak clearly.');
+      } else {
+        setHeardTranscript(error?.error ? `Voice error: ${error.error}` : 'Voice recognition stopped.');
         speakText(translate('micUnavailable'), lang);
       }
     };
+    let commandHandled = false;
     recognition.onresult = (event) => {
-      // Web Speech can return multiple result entries. Always inspect the
-      // changed/final result instead of assuming result 0 is the command.
+      // Chromium may provide interim and final results in separate events.
+      // Read the changed entries and act on the first usable command.
       const startIndex = Math.max(0, event.resultIndex ?? 0);
       const transcripts: string[] = [];
       for (let index = startIndex; index < event.results.length; index += 1) {
@@ -305,6 +312,9 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
       if (!transcript) return;
 
       setHeardTranscript(transcript);
+      if (commandHandled) return;
+      commandHandled = true;
+
       const canonical = dispatchVoiceCommand(transcript);
       const responseKey: Record<string, CopyKey> = {
         HOME: 'home',
