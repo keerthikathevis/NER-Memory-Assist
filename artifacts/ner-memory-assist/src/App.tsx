@@ -17,6 +17,7 @@ import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type 
 import { speakText } from '@/lib/voice';
 import { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/offline-voice';
 import { getSpeechRecognitionLocale } from '@/lib/voiceLocales';
+import { resolveMultilingualVoiceCommand } from '@/lib/voiceCommand';
 import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStatus, type MedicineSchedule } from '@/lib/medicine';
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
 import { clearLocalDataMirror, clearMedicineData, getEmergencyContacts, saveEmergencyContacts, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type EmergencyContact, type MemoryProfile, writeStore } from '@/lib/storage';
@@ -196,16 +197,41 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
   const dispatchVoiceCommand = (command: string) => {
     const normalized = normalizeCommand(command);
-    const canonical = resolveVoiceCommand(lang, command);
+
+    // Use the dedicated multilingual command resolver first. The older
+    // music/game resolver does not contain every navigation command, so a
+    // transcript such as "open games" could be heard correctly but produce
+    // no navigation.
+    const multilingualCommand = resolveMultilingualVoiceCommand(lang, command);
+    const legacyCommand = resolveVoiceCommand(lang, command);
+    const canonical = multilingualCommand ?? legacyCommand ?? normalized;
+
     const navigation: Record<string, string> = {
-      'go home': '/patient', home: '/patient', 'open games': '/games', games: '/games',
-      'open medicine': '/medicine', medicine: '/medicine', 'open memories': '/memories', memories: '/memories',
-'show progress': '/progress', progress: '/progress',
+      HOME: '/patient',
+      OPEN_GAMES: '/games',
+      OPEN_MEDICINE: '/medicine',
+      OPEN_MEMORIES: '/memories',
+      OPEN_PROGRESS: '/progress',
+      OPEN_SETTINGS: '/settings',
+      'go home': '/patient',
+      home: '/patient',
+      'open games': '/games',
+      games: '/games',
+      'open medicine': '/medicine',
+      medicine: '/medicine',
+      'open memories': '/memories',
+      memories: '/memories',
+      'show progress': '/progress',
+      progress: '/progress',
       settings: '/settings',
     };
-    const target = Object.entries(navigation).find(([phrase]) => normalized.includes(phrase) || canonical === phrase)?.[1];
+
+    const target = navigation[canonical] ?? Object.entries(navigation)
+      .find(([phrase]) => normalized === phrase || normalized.includes(phrase))?.[1];
+
     if (target) setLocation(target);
-    window.dispatchEvent(new CustomEvent('ner-voice-command', { detail: canonical ?? normalized }));
+    window.dispatchEvent(new CustomEvent('ner-voice-command', { detail: canonical }));
+    return canonical;
   };
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -261,9 +287,26 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript ?? '';
       if (!transcript.trim()) return;
-      dispatchVoiceCommand(transcript);
-      const canonical = resolveVoiceCommand(lang, transcript);
-      const response = canonical ? translate((titleKey[canonical] ?? 'home') as CopyKey) : transcript;
+      const canonical = dispatchVoiceCommand(transcript);
+      const responseKey: Record<string, CopyKey> = {
+        HOME: 'home',
+        OPEN_GAMES: 'games',
+        OPEN_MEDICINE: 'medicine',
+        OPEN_MEMORIES: 'memories',
+        OPEN_PROGRESS: 'progress',
+        OPEN_SETTINGS: 'settings',
+        'go home': 'home',
+        'open games': 'games',
+        games: 'games',
+        'open medicine': 'medicine',
+        medicine: 'medicine',
+        'open memories': 'memories',
+        memories: 'memories',
+        'show progress': 'progress',
+        progress: 'progress',
+        settings: 'settings',
+      };
+      const response = responseKey[canonical] ? translate(responseKey[canonical]) : transcript;
       window.setTimeout(() => { speakText(response, lang); }, 150);
     };
 
