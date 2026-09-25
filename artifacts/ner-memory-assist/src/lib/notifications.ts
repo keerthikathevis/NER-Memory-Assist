@@ -9,31 +9,6 @@ type NotificationPayload = {
   data: { medicineId: string; scheduledFor: string; time: string };
 };
 
-const MEDICINE_IMAGE_CACHE = 'ner-memory-medicine-images-v1';
-
-const cacheMedicinePhoto = async (medicine: MedicineSchedule): Promise<string | undefined> => {
-  const photo = medicine.photoDataUrl?.trim();
-  if (!photo || typeof caches === 'undefined') return undefined;
-
-  const imageUrl = new URL(
-    '/medicine-images/' + encodeURIComponent(medicine.id) + '.image',
-    window.location.origin,
-  ).toString();
-
-  try {
-    const cache = await caches.open(MEDICINE_IMAGE_CACHE);
-    const existing = await cache.match(imageUrl);
-    if (!existing) {
-      const response = await fetch(photo);
-      if (!response.ok) return undefined;
-      await cache.put(imageUrl, response);
-    }
-    return imageUrl;
-  } catch {
-    return undefined;
-  }
-};
-
 export const notificationPermission = (): NotificationPermissionState => {
   if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
   return Notification.permission;
@@ -51,7 +26,6 @@ export const sendMedicineNotification = async (
   if (notificationPermission() !== 'granted') return false;
 
   const scheduledFor = dateKey();
-  const imageUrl = await cacheMedicinePhoto(medicine);
 
   const payload: NotificationPayload = {
     title: labels.title,
@@ -95,7 +69,6 @@ export const sendMedicineNotification = async (
         tag: payload.tag,
         data: payload.data,
         icon: '/icon-192.svg',
-        ...(imageUrl ? { image: imageUrl } : {}),
       });
     } catch {
       new Notification(payload.title, {
