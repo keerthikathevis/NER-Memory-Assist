@@ -1000,11 +1000,12 @@ function MedicineNotificationScheduler({ lang }: { lang: Lang }) {
       }
     };
 
-    void checkReminders();
+    const initialCheck = window.setTimeout(() => { void checkReminders(); }, 0);
     const timer = window.setInterval(() => { void checkReminders(); }, 15000);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(initialCheck);
       window.clearInterval(timer);
     };
   }, [lang]);
