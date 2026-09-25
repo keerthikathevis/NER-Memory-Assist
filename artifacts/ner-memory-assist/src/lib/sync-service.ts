@@ -67,13 +67,51 @@ export const clearSyncQueue = () => {
   window.dispatchEvent(new Event('ner-sync-updated'));
 };
 
+const API_URL = '/api/sync';
+
 export class SyncService {
-  // This intentionally does not contact a server yet. It is the seam for a
-  // future authenticated FastAPI/PostgreSQL sync implementation.
+  // Prototype cloud sync: local-first data remains available offline, while
+  // pending records are mirrored to the Vercel server when connectivity exists.
   async processQueue() {
     const queue = getSyncQueue();
-    return { processed: 0, pending: queue.filter((record) => record.status === 'PENDING').length };
+    const pending = queue.filter((record) => record.status === 'PENDING' || record.status === 'SYNCING');
+    if (!pending.length || typeof fetch === 'undefined') {
+      return { processed: 0, pending: queue.filter((record) => record.status === 'PENDING').length };
+    }
+
+    try {
+      pending.forEach((record) => { record.status = 'SYNCING'; });
+      saveQueue(queue);
+
+      const deviceId = pending[0]?.deviceId ?? '';
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, records: pending }),
+      });
+      if (!response.ok) throw new Error('Sync request failed');
+
+      const result = await response.json() as { records?: SyncRecord[] };
+      const syncedKeys = new Set((result.records ?? []).map((record) => `${record.recordType}:${record.localId}`));
+      const next = getSyncQueue().map((record) => {
+        const key = `${record.recordType}:${record.localId}`;
+        return syncedKeys.has(key) && record.status === 'SYNCING'
+          ? { ...record, status: 'SYNCED' as const }
+          : record;
+      });
+      saveQueue(next);
+      window.dispatchEvent(new Event('ner-sync-updated'));
+      return { processed: pending.length, pending: next.filter((record) => record.status === 'PENDING').length };
+    } catch {
+      const next = getSyncQueue().map((record) =>
+        record.status === 'SYNCING' ? { ...record, status: 'PENDING' as const } : record
+      );
+      saveQueue(next);
+      return { processed: 0, pending: next.filter((record) => record.status === 'PENDING').length };
+    }
   }
 }
+
+export const syncService = new SyncService();
 
 export const syncService = new SyncService();
