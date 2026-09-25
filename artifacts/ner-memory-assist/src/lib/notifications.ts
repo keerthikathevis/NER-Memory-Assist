@@ -26,7 +26,6 @@ export const sendMedicineNotification = async (
   if (notificationPermission() !== 'granted') return false;
 
   const scheduledFor = dateKey();
-
   const payload: NotificationPayload = {
     title: labels.title,
     body: medicine.name + ' · ' + labels.scheduled + ' ' + medicine.time,
@@ -34,51 +33,34 @@ export const sendMedicineNotification = async (
     data: { medicineId: medicine.id, scheduledFor, time: medicine.time },
   };
 
+  // Medicine photos are optional. The reminder itself only uses the stable
+  // app icon, so a missing photo can never prevent the notification.
+  const options = {
+    body: payload.body,
+    tag: payload.tag,
+    data: payload.data,
+    icon: '/icon-192.svg',
+    badge: '/icon-192.svg',
+    requireInteraction: true,
+  };
+
   try {
     if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      const options = {
-        body: payload.body,
-        tag: payload.tag,
-        data: payload.data,
-        icon: '/icon-192.svg',
-        badge: '/icon-192.svg',
-        ...(imageUrl ? { image: imageUrl } : {}),
-        requireInteraction: true,
-      };
-
       try {
+        const registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<never>((_, reject) =>
+            window.setTimeout(() => reject(new Error('Service worker timeout')), 5000),
+          ),
+        ]);
         await registration.showNotification(payload.title, options);
+        return true;
       } catch {
-        await registration.showNotification(payload.title, {
-          body: payload.body,
-          tag: payload.tag,
-          data: payload.data,
-          icon: '/icon-192.svg',
-          badge: '/icon-192.svg',
-          requireInteraction: true,
-        });
+        // Fall through to the regular Notification API.
       }
-
-      return true;
     }
 
-    try {
-      new Notification(payload.title, {
-        body: payload.body,
-        tag: payload.tag,
-        data: payload.data,
-        icon: '/icon-192.svg',
-      });
-    } catch {
-      new Notification(payload.title, {
-        body: payload.body,
-        tag: payload.tag,
-        data: payload.data,
-        icon: '/icon-192.svg',
-      });
-    }
-
+    new Notification(payload.title, options);
     return true;
   } catch {
     return false;
