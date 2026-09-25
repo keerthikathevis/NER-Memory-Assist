@@ -379,6 +379,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
           </Link>}
           <Link href="/settings" onClick={() => setDrawer(false)} className="mt-2 flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10"><SettingsIcon size={22} /><span>{translate('settings')}</span></Link>
         </div>
+        </div>
         <div className="mt-4 shrink-0 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed opacity-85"><LockKeyhole size={16} className="mb-2" />{translate('privacy')}</div>
       </aside>
       {drawer && <button aria-label={translate('close')} className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setDrawer(false)} />}
