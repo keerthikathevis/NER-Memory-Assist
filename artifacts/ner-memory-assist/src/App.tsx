@@ -149,7 +149,7 @@ type SpeechRecognitionLike = {
   onstart: (() => void) | null;
   onend: (() => void) | null;
   onerror: ((event?: unknown) => void) | null;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onresult: ((event: { resultIndex?: number; results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }>> }) => void) | null;
   processLocally?: boolean;
 };
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
@@ -170,6 +170,7 @@ function normalizeCommand(command: string) {
 function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; role: Role }) {
   const [location, setLocation] = useLocation();
   const [listening, setListening] = useState(false);
+  const [heardTranscript, setHeardTranscript] = useState('');
   const [offline, setOffline] = useState(!navigator.onLine);
   const [drawer, setDrawer] = useState(false);
   const translate = (key: CopyKey) => tr(lang, key);
@@ -258,6 +259,9 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
     recognition.lang = recognitionLocale;
     recognition.continuous = false;
     recognition.interimResults = false;
+    try {
+      (recognition as SpeechRecognitionLike & { maxAlternatives?: number }).maxAlternatives = 3;
+    } catch {}
 
     // When offline, only force local recognition after the browser confirms
     // that the selected language pack is installed and usable on-device.
@@ -279,14 +283,28 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
       recognitionRef.current = null;
       setListening(false);
     };
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
       recognitionRef.current = null;
       setListening(false);
-      speakText(translate('micUnavailable'), lang);
+      const error = event as { error?: string } | undefined;
+      if (error?.error !== 'no-speech') {
+        speakText(translate('micUnavailable'), lang);
+      }
     };
     recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0]?.transcript ?? '';
-      if (!transcript.trim()) return;
+      // Web Speech can return multiple result entries. Always inspect the
+      // changed/final result instead of assuming result 0 is the command.
+      const startIndex = Math.max(0, event.resultIndex ?? 0);
+      const transcripts: string[] = [];
+      for (let index = startIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const transcript = result?.[0]?.transcript?.trim() ?? '';
+        if (transcript) transcripts.push(transcript);
+      }
+      const transcript = transcripts.join(' ').trim();
+      if (!transcript) return;
+
+      setHeardTranscript(transcript);
       const canonical = dispatchVoiceCommand(transcript);
       const responseKey: Record<string, CopyKey> = {
         HOME: 'home',
@@ -368,6 +386,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
         </header>
         <main className="mx-auto max-w-6xl p-4 pb-28 md:p-8">
           {listening && <div className="pop mb-5 flex items-center gap-3 rounded-2xl border border-[hsl(var(--accent)/.3)] bg-[hsl(var(--accent)/.12)] p-4 text-sm"><Volume2 size={20} /><span>{speechSupported ? translate('listening') : translate('micUnavailable')}</span></div>}
+          {heardTranscript && <div className="mb-5 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 text-sm"><span className="font-semibold">Heard:</span> {heardTranscript}</div>}
           {!speechSupported && <p className="mb-5 text-center text-xs text-[hsl(var(--muted-foreground))]">{translate('speechNote')}</p>}
           {children}
         </main>
