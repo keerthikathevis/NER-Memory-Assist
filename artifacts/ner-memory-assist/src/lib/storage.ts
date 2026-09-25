@@ -2,7 +2,7 @@ import type { GameResult } from './adaptive-engine';
 import { demoMemoryProfiles } from './game-data';
 import { defaultMedicineSchedules, type MedicineEvent, type MedicineSchedule } from './medicine';
 import { clearMirroredRecords, mirrorRecord } from './indexed-db';
-import { queueChange } from './sync-service';
+import { queueChange, syncService } from './sync-service';
 
 export type MemoryProfile = {
   id: string;
