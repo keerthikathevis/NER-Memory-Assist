@@ -37,7 +37,10 @@ export const writeStore = (key: string, value: unknown) => {
       'ner-music-volume': 'music-preferences',
     };
     const recordType = syncTypes[key];
-    if (recordType) queueChange(recordType, value, key);
+    if (recordType) {
+      queueChange(recordType, value, key);
+      void syncService.processQueue();
+    }
     if (recordType) void mirrorRecord(key, value);
   } catch {
     // Local-first data is best effort when storage is unavailable or full.
