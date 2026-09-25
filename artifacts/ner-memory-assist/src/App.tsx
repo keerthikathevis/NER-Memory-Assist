@@ -360,11 +360,12 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
 
   return (
     <div className="shell-bg min-h-[100dvh]">
-      <aside className={`fixed inset-y-0 left-0 z-30 w-72 bg-[hsl(var(--sidebar))] p-5 text-[hsl(var(--sidebar-foreground))] transition-transform md:translate-x-0 ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 flex h-[100dvh] w-[min(86vw,18rem)] flex-col overflow-hidden bg-[hsl(var(--sidebar))] p-5 text-[hsl(var(--sidebar-foreground))] transition-transform md:translate-x-0 md:w-72 ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-8 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26} /></div>
           <div><p className="serif text-xl">NER</p><p className="text-xs tracking-[.18em] opacity-70">MEMORY ASSIST</p></div>
         </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
         <nav className="space-y-2">
           {nav.map(([href, key, Icon]) => (
             <Link key={href} href={href} onClick={() => setDrawer(false)} data-testid={`link-${key}`} className={`flex min-h-14 items-center gap-4 rounded-2xl px-4 text-base transition-colors ${location === href ? 'bg-white/15 font-bold' : 'opacity-80 hover:bg-white/10'}`}>
@@ -373,12 +374,12 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
           ))}
         </nav>
         <div className="mt-8 border-t border-white/15 pt-5">
-          <Link href={role === 'caregiver' ? '/caregiver' : role === 'healthcare' ? '/healthcare' : '/settings'} className="flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10">
-            <ShieldCheck size={22} /><span>{role === 'patient' ? translate('settings') : role === 'caregiver' ? translate('caregiverView') : translate('healthcareView')}</span>
-          </Link>
-          <Link href="/settings" className="mt-2 flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10"><SettingsIcon size={22} /><span>{translate('settings')}</span></Link>
+          {role !== 'patient' && <Link href={role === 'caregiver' ? '/caregiver' : '/healthcare'} onClick={() => setDrawer(false)} className="flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10">
+            <ShieldCheck size={22} /><span>{role === 'caregiver' ? translate('caregiverView') : translate('healthcareView')}</span>
+          </Link>}
+          <Link href="/settings" onClick={() => setDrawer(false)} className="mt-2 flex min-h-14 items-center gap-4 rounded-2xl px-4 opacity-85 hover:bg-white/10"><SettingsIcon size={22} /><span>{translate('settings')}</span></Link>
         </div>
-        <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed opacity-85"><LockKeyhole size={16} className="mb-2" />{translate('privacy')}</div>
+        <div className="mt-4 shrink-0 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed opacity-85"><LockKeyhole size={16} className="mb-2" />{translate('privacy')}</div>
       </aside>
       {drawer && <button aria-label={translate('close')} className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setDrawer(false)} />}
       <div className="md:pl-72">
@@ -400,8 +401,8 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
           {!speechSupported && <p className="mb-5 text-center text-xs text-[hsl(var(--muted-foreground))]">{translate('speechNote')}</p>}
           {children}
         </main>
-        <nav className="fixed bottom-0 left-0 right-0 z-20 flex justify-around border-t border-[hsl(var(--border))] bg-[hsl(var(--card)/.96)] p-2 backdrop-blur md:hidden">
-          {nav.slice(0, 5).map(([href, key, Icon]) => <Link key={href} href={href} className={`flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 rounded-xl text-xs ${location === href ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))] font-bold' : 'text-[hsl(var(--muted-foreground))]'}`}><Icon size={20} /><span>{translate(key)}</span></Link>)}
+        <nav className={`fixed bottom-0 left-0 right-0 z-20 flex items-stretch gap-1 border-t border-[hsl(var(--border))] bg-[hsl(var(--card)/.97)] p-1.5 pb-[calc(.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden transition-opacity ${drawer ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+          {nav.slice(0, 5).map(([href, key, Icon]) => <Link key={href} href={href} onClick={() => setDrawer(false)} className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[10px] leading-tight ${location === href ? 'bg-[hsl(var(--primary)/.12)] text-[hsl(var(--primary))] font-bold' : 'text-[hsl(var(--muted-foreground))]'}`}><Icon size={20} /><span className="line-clamp-2 max-w-full">{translate(key)}</span></Link>)}
         </nav>
       </div>
     </div>
