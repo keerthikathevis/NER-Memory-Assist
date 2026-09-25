@@ -905,6 +905,60 @@ function Settings({ lang, role, setLang, setRole }: { lang: Lang; role: Role; se
   return <div className="gentle-in max-w-3xl"><PageIntro icon={SettingsIcon} title={translate('settings')} hint={translate('privacy')} /><div className="space-y-4"><SectionCard><div className="flex items-center gap-3"><Languages className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('language')}</h3></div><select value={lang} onChange={(event) => setLang(event.target.value as Lang)} className="min-h-12 rounded-xl border bg-transparent px-3">{languageOptions.map((item) => <option key={item.id} value={item.id}>{item.native}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><UserRound className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('role')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{translate(role)}</p></div><select value={role} onChange={(event) => setRole(event.target.value as Role)} className="min-h-12 rounded-xl border bg-transparent px-3">{(['patient', 'caregiver', 'healthcare'] as Role[]).map((value) => <option key={value} value={value}>{translate(value)}</option>)}</select></div></SectionCard><SectionCard><div className="flex items-center gap-3"><BookOpen className="text-[hsl(var(--primary))]" /><div className="flex-1"><h3 className="font-bold">{translate('textSize')}</h3><p className="text-sm text-[hsl(var(--muted-foreground))]">{large ? translate('large') : translate('normal')}</p></div><button onClick={toggleLarge} className="min-h-12 rounded-xl bg-[hsl(var(--secondary))] px-4 font-bold">{large ? translate('normal') : translate('large')}</button></div></SectionCard><SectionCard><div className="flex items-center gap-3"><LockKeyhole className="text-[hsl(var(--primary))]" /><div><h3 className="font-bold">{translate('privacyTitle')}</h3><p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{translate('privacy')}</p></div></div></SectionCard><button onClick={reset} className="min-h-14 w-full rounded-2xl border border-[hsl(var(--destructive)/.35)] font-bold text-[hsl(var(--destructive))]">{translate('reset')}</button></div></div>;
 }
 
+type DueMedicineReminder = { id: string; name: string; time: string };
+
+function MedicineReminderBanner({ lang }: { lang: Lang }) {
+  const translate = (key: CopyKey) => tr(lang, key);
+  const [reminders, setReminders] = useState<DueMedicineReminder[]>([]);
+
+  useEffect(() => {
+    const handleDue = (event: Event) => {
+      const detail = (event as CustomEvent<DueMedicineReminder>).detail;
+      if (!detail?.id) return;
+      setReminders((current) => current.some((item) => item.id === detail.id) ? current : [...current, detail]);
+    };
+    window.addEventListener('ner-medicine-due', handleDue);
+    return () => window.removeEventListener('ner-medicine-due', handleDue);
+  }, []);
+
+  if (!reminders.length) return null;
+
+  return <div className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-xl space-y-3" role="alert">
+    {reminders.map((medicine) => (
+      <div key={medicine.id} className="rounded-2xl border-2 border-[hsl(var(--primary)/.35)] bg-[hsl(var(--card))] p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <BellRing className="mt-1 shrink-0 text-[hsl(var(--primary))]" />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold">{translate('notificationTitle')}</p>
+            <p className="mt-1 text-sm">{medicine.name} · {translate('scheduled')} {medicine.time}</p>
+          </div>
+          <button
+            type="button"
+            aria-label={translate('taken')}
+            onClick={() => {
+              saveMedicineEvent({
+                id: `taken-${medicine.id}-${Date.now()}`,
+                medicineId: medicine.id,
+                status: 'taken',
+                timestamp: new Date().toISOString(),
+                scheduledFor: dateKey(),
+              });
+              setReminders((current) => current.filter((item) => item.id !== medicine.id));
+            }}
+            className="min-h-11 rounded-xl bg-[hsl(var(--primary))] px-4 font-bold text-[hsl(var(--primary-foreground))]"
+          >{translate('taken')}</button>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setReminders((current) => current.filter((item) => item.id !== medicine.id))}
+            className="min-h-11 rounded-xl px-3 font-bold"
+          >×</button>
+        </div>
+      </div>
+    ))}
+  </div>;
+}
+
 function MedicineNotificationScheduler({ lang }: { lang: Lang }) {
   const translate = (key: CopyKey) => tr(lang, key);
 
@@ -918,32 +972,36 @@ function MedicineNotificationScheduler({ lang }: { lang: Lang }) {
       const todaySchedules = schedules
         .filter((medicine) => isScheduledForDate(medicine))
         .sort((a, b) => a.time.localeCompare(b.time));
-
       const now = new Date();
 
       for (const medicine of todaySchedules) {
         const dueAt = new Date(`${today}T${medicine.time}:00`).getTime();
         const status = latestMedicineStatus(medicine.id, events, today);
-
         if (now.getTime() < dueAt || status === 'taken' || status === 'missed') continue;
 
         const key = `ner-notified-${medicine.id}-${today}-${medicine.time}`;
         if (localStorage.getItem(key)) continue;
 
-        const sent = await sendMedicineNotification(medicine, {
+        // Always create an in-app reminder. Browser notifications are an
+        // additional channel and are not allowed to block the reminder.
+        window.dispatchEvent(new CustomEvent('ner-medicine-due', {
+          detail: { id: medicine.id, name: medicine.name, time: medicine.time },
+        }));
+
+        void sendMedicineNotification(medicine, {
           title: translate('notificationTitle'),
           scheduled: translate('scheduled'),
           taken: translate('taken'),
           later: translate('later'),
         });
 
+        localStorage.setItem(key, '1');
         if (cancelled) return;
-        if (sent) localStorage.setItem(key, '1');
       }
     };
 
     void checkReminders();
-    const timer = window.setInterval(() => { void checkReminders(); }, 30000);
+    const timer = window.setInterval(() => { void checkReminders(); }, 15000);
 
     return () => {
       cancelled = true;
@@ -960,5 +1018,5 @@ function Router() {
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
-function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedErrorBoundary><MedicineNotificationScheduler lang={readStore('ner-lang', 'en' as Lang)} /><Router /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
+function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedErrorBoundary><MedicineNotificationScheduler lang={readStore('ner-lang', 'en' as Lang)} /><MedicineReminderBanner lang={readStore('ner-lang', 'en' as Lang)} /><Router /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
 export default App;
