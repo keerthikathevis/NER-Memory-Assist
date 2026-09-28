@@ -57,9 +57,147 @@ function Card({children,className='' }:{children:ReactNode;className?:string}){r
 function Badge({risk}:{risk:Risk}){return <span className={'rounded-full px-3 py-1 text-xs font-semibold '+(risk==='ELEVATED'?'bg-red-100 text-red-700':risk==='MODERATE'?'bg-amber-100 text-amber-700':'bg-emerald-100 text-emerald-700')}>{riskLabel(risk)}</span>}
 function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:any}){return <div className="rounded-xl border p-4"><Icon className="mb-2 h-5 w-5"/><div className="text-2xl font-bold">{value}</div><div className="text-sm text-muted-foreground">{label}</div></div>}
 
-function Login({onLogin}:{onLogin:(role:Role,email:string)=>void}) { const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const accounts:Record<string,Role>={'personnel@demo.neuroflex.app':'personnel','clinician@demo.neuroflex.app':'clinician','welfare@demo.neuroflex.app':'welfare','commander@demo.neuroflex.app':'commander','admin@demo.neuroflex.app':'admin'}; const submit=(e:React.FormEvent)=>{e.preventDefault();const key=email.trim().toLowerCase();if(!accounts[key]||password!=='Demo@12345'){setError('Use a listed demo account and the demo password.');return;}onLogin(accounts[key],key)}; return <div className="min-h-screen bg-background px-4 py-10"><div className="mx-auto max-w-md"><Card><h1 className="text-2xl font-bold">NeuroFlex</h1><p className="mt-1 text-sm text-muted-foreground">Personnel Stress & Welfare Support</p><form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm">Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label><label className="block text-sm">Password<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label>{error&&<p className="text-sm text-red-600">{error}</p>}<button className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">Sign in</button></form><p className="mt-4 text-xs text-muted-foreground">Prototype login. Demo password: Demo@12345. Production must use server-side authentication, secure password hashing, verified email, secure session cookies and MFA for privileged roles.</p></Card></div></div>; }
+type Account = {
+  username: string;
+  email: string;
+  password: string;
+  role: Role;
+  verified: boolean;
+};
 
-function AppShell({lang,setLang,role,email,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;email:string;children:ReactNode}){
+function loadAccounts(): Account[] {
+  try {
+    const raw = localStorage.getItem('nf-accounts');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAccounts(accounts: Account[]) {
+  localStorage.setItem('nf-accounts', JSON.stringify(accounts));
+}
+
+function Login({onLogin}:{onLogin:(role:Role,email:string,username:string)=>void}) {
+  const [mode,setMode]=useState<'login'|'register'>('login');
+  const [username,setUsername]=useState('');
+  const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
+  const [confirmPassword,setConfirmPassword]=useState('');
+  const [error,setError]=useState('');
+  const [message,setMessage]=useState('');
+
+  const submit=(e:React.FormEvent)=>{
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    const cleanUsername=username.trim();
+    const cleanEmail=email.trim().toLowerCase();
+
+    if(mode==='register'){
+      if(cleanUsername.length<3){
+        setError('Username must contain at least 3 characters.');
+        return;
+      }
+      if(!/^\\S+@\\S+\\.\\S+$/.test(cleanEmail)){
+        setError('Enter a valid email address.');
+        return;
+      }
+      if(password.length<8){
+        setError('Password must contain at least 8 characters.');
+        return;
+      }
+      if(password!==confirmPassword){
+        setError('Passwords do not match.');
+        return;
+      }
+      const accounts=loadAccounts();
+      if(accounts.some(a=>a.email===cleanEmail)){
+        setError('An account with this email already exists. Please sign in.');
+        return;
+      }
+      if(accounts.some(a=>a.username.toLowerCase()===cleanUsername.toLowerCase())){
+        setError('That username is already in use.');
+        return;
+      }
+      const account:Account={
+        username:cleanUsername,
+        email:cleanEmail,
+        password,
+        role:'personnel',
+        verified:false
+      };
+      saveAccounts([...accounts,account]);
+      setMessage('Account created. You can now sign in with your email and password.');
+      setMode('login');
+      setUsername('');
+      setPassword('');
+      setConfirmPassword('');
+      return;
+    }
+
+    const account=loadAccounts().find(a=>a.email===cleanEmail && a.password===password);
+    if(!account){
+      setError('Email or password is incorrect.');
+      return;
+    }
+    onLogin(account.role,account.email,account.username);
+  };
+
+  return <div className="min-h-screen bg-background px-4 py-10">
+    <div className="mx-auto max-w-md">
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">NeuroFlex</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Personnel Stress & Welfare Support</p>
+          </div>
+          <div className="rounded-xl bg-primary p-2 text-primary-foreground"><HeartPulse/></div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 rounded-xl border p-1">
+          <button type="button" onClick={()=>{setMode('login');setError('');setMessage('')}} className={mode==='login'?'rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground':'rounded-lg px-3 py-2 text-sm'}>Sign in</button>
+          <button type="button" onClick={()=>{setMode('register');setError('');setMessage('')}} className={mode==='register'?'rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground':'rounded-lg px-3 py-2 text-sm'}>Create account</button>
+        </div>
+
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          {mode==='register' && <label className="block text-sm">Username
+            <input required minLength={3} value={username} onChange={e=>setUsername(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3" placeholder="Choose a username"/>
+          </label>}
+
+          <label className="block text-sm">Email
+            <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3" placeholder="you@example.com"/>
+          </label>
+
+          <label className="block text-sm">Password
+            <input type="password" required minLength={8} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3" placeholder="At least 8 characters"/>
+          </label>
+
+          {mode==='register' && <label className="block text-sm">Confirm password
+            <input type="password" required minLength={8} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3" placeholder="Re-enter your password"/>
+          </label>}
+
+          {error&&<p className="text-sm text-red-600">{error}</p>}
+          {message&&<p className="text-sm text-emerald-700">{message}</p>}
+
+          <button className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">
+            {mode==='login'?'Sign in':'Create account'}
+          </button>
+        </form>
+
+        <div className="mt-5 rounded-xl border p-3 text-xs text-muted-foreground">
+          <b>Access control:</b> new accounts are created as Personnel. Clinician, Welfare Officer, Commander and Administrator access must be assigned by an authorized administrator after verification.
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Prototype authentication stores account data locally in this browser. Production must use a secure backend, password hashing, verified email, secure session cookies, MFA and server-side role authorization.
+        </p>
+      </Card>
+    </div>
+  </div>;
+}
+
+function AppShell({lang,setLang,role,email,username,onLogout,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;email:string;username:string;onLogout:()=>void;children:ReactNode}){
   const c=copy[lang]; const [open,setOpen]=useState(false); const [location]=useLocation();
   const links: Array<{href:string;key:string;Icon:any}> = [
     {href:'/',key:'home',Icon:Home},
@@ -98,7 +236,7 @@ function AppShell({lang,setLang,role,email,children}:{lang:Lang;setLang:(l:Lang)
   return <div className="min-h-screen bg-background text-foreground">
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3"><button className="md:hidden" onClick={()=>setOpen(!open)}><Menu/></button><div className="rounded-xl bg-primary p-2 text-primary-foreground"><HeartPulse/></div><div><div className="font-bold">{c.title}</div><div className="text-xs text-muted-foreground">{c.subtitle}</div></div></div>
-      <div className="flex items-center gap-2"><select aria-label={c.language} value={lang} onChange={e=>setLang(e.target.value as Lang)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><span className="hidden text-xs text-muted-foreground sm:inline">{email}</span><span className="rounded-lg border px-2 py-1 text-xs font-medium">{role}</span></div>
+      <div className="flex items-center gap-2"><select aria-label={c.language} value={lang} onChange={e=>setLang(e.target.value as Lang)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><div className="hidden text-right sm:block"><div className="text-xs font-medium">{username}</div><div className="text-[11px] text-muted-foreground">{email}</div></div><span className="rounded-lg border px-2 py-1 text-xs font-medium">{role}</span><button type="button" onClick={onLogout} title={c.signOut} className="rounded-lg border p-2 hover:bg-muted"><LogOut className="h-4 w-4"/></button></div>
     </div></header>
     <div className="mx-auto flex max-w-7xl"><aside className={(open?'block':'hidden')+' fixed inset-x-0 top-[65px] z-30 bg-background p-3 md:static md:block md:w-64 md:border-r md:bg-transparent md:p-4'}><nav className="space-y-1">{links.map(({href,key,Icon})=><Link key={href} href={href as string}><a onClick={()=>setOpen(false)} className={'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm '+(location===href?'bg-primary text-primary-foreground':'hover:bg-muted')}><Icon className="h-4 w-4"/>{c[key as keyof typeof c]}</a></Link>)}</nav></aside><main className="min-w-0 flex-1 p-4 md:p-6">{children}</main></div>
   </div>
@@ -611,6 +749,7 @@ function App() {
   const [lang, setLang] = useState<Lang>('en');
   const [role, setRole] = useState<Role|null>(null);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [personnel, setPersonnel] = useState<Personnel[]>(seedPersonnel);
 
   useEffect(() => {
@@ -640,7 +779,15 @@ function App() {
     localStorage.setItem('nf-personnel', JSON.stringify(personnel));
   }, [personnel]);
 
-  if (!role) return <Login onLogin={(r,e)=>{setRole(r);setEmail(e)}} />;
+  const logout = () => {
+    setRole(null);
+    setEmail('');
+    setUsername('');
+  };
+
+  if (!role) {
+    return <Login onLogin={(r,e,u)=>{setRole(r);setEmail(e);setUsername(u)}} />;
+  }
 
   const c = copy[lang];
 
@@ -650,10 +797,13 @@ function App() {
       setLang={setLang}
       role={role}
       email={email}
+      username={username}
+      onLogout={logout}
     >
       <Switch>
         <Route path="/profile"><Protected allowed={["personnel"]} role={role}><Profile lang={lang} personnel={personnel} setPersonnel={setPersonnel} /></Protected></Route>
-        <Route path="/health-assessment"><Protected allowed={["personnel","clinician"]} role={role}><HealthAssessment personnel={personnel} /></Protected></Route><Route path="/check-in"><Protected allowed={["personnel"]} role={role}><CheckIn lang={lang} setPersonnel={setPersonnel} /></Protected></Route>
+        <Route path="/health-assessment"><Protected allowed={["personnel","clinician"]} role={role}><HealthAssessment personnel={personnel} /></Protected></Route>
+        <Route path="/check-in"><Protected allowed={["personnel"]} role={role}><CheckIn lang={lang} setPersonnel={setPersonnel} /></Protected></Route>
         <Route path="/trends"><Protected allowed={["personnel"]} role={role}><Trends personnel={personnel} /></Protected></Route>
         <Route path="/workload"><Protected allowed={["personnel","welfare","commander"]} role={role}><Workload personnel={personnel} /></Protected></Route>
         <Route path="/clinician">
@@ -672,12 +822,8 @@ function App() {
           </Protected>
         </Route>
         <Route path="/counselling"><Protected allowed={["personnel","clinician"]} role={role}><Counselling /></Protected></Route>
-        <Route path="/privacy">
-          <Privacy c={c} />
-        </Route>
-        <Route>
-          <HomePage c={c} personnel={personnel} />
-        </Route>
+        <Route path="/privacy"><Privacy c={c} /></Route>
+        <Route><HomePage c={c} personnel={personnel} /></Route>
       </Switch>
     </AppShell>
   );
