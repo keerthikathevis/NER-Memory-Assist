@@ -57,13 +57,13 @@ function Card({children,className='' }:{children:ReactNode;className?:string}){r
 function Badge({risk}:{risk:Risk}){return <span className={'rounded-full px-3 py-1 text-xs font-semibold '+(risk==='ELEVATED'?'bg-red-100 text-red-700':risk==='MODERATE'?'bg-amber-100 text-amber-700':'bg-emerald-100 text-emerald-700')}>{riskLabel(risk)}</span>}
 function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:any}){return <div className="rounded-xl border p-4"><Icon className="mb-2 h-5 w-5"/><div className="text-2xl font-bold">{value}</div><div className="text-sm text-muted-foreground">{label}</div></div>}
 
-function Login({onLogin}:{onLogin:(role:Role,email:string)=>void}) { const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const accounts:Record<string,Role>={'personnel@demo.neuroflex.app':'personnel','clinician@demo.neuroflex.app':'clinician','welfare@demo.neuroflex.app':'welfare','commander@demo.neuroflex.app':'commander','admin@demo.neuroflex.app':'admin'}; const submit=(e:React.FormEvent)=>{e.preventDefault();const key=email.trim().toLowerCase();if(!accounts[key]||password!=='Demo@12345'){setError('Use a listed demo account and the demo password.');return;}onLogin(accounts[key],key)}; return <div className="min-h-screen bg-background px-4 py-10"><div className="mx-auto max-w-md"><Card><h1 className="text-2xl font-bold">NeuroFlex</h1><p className="mt-1 text-sm text-muted-foreground">Personnel Stress & Welfare Support</p><form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm">Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label><label className="block text-sm">Password<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label>{error&&<p className="text-sm text-red-600">{error}</p>}<button className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">Sign in</button></form><p className="mt-4 text-xs text-muted-foreground">Prototype login. Demo password: Demo@12345. Production must use server-side authentication, secure password hashing, verified email, secure session cookies and MFA for privileged roles.</p></Card></div></div>; }\n\nfunction AppShell({lang,setLang,role,setRole,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:ReactNode}){
+function Login({onLogin}:{onLogin:(role:Role,email:string)=>void}) { const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const accounts:Record<string,Role>={'personnel@demo.neuroflex.app':'personnel','clinician@demo.neuroflex.app':'clinician','welfare@demo.neuroflex.app':'welfare','commander@demo.neuroflex.app':'commander','admin@demo.neuroflex.app':'admin'}; const submit=(e:React.FormEvent)=>{e.preventDefault();const key=email.trim().toLowerCase();if(!accounts[key]||password!=='Demo@12345'){setError('Use a listed demo account and the demo password.');return;}onLogin(accounts[key],key)}; return <div className="min-h-screen bg-background px-4 py-10"><div className="mx-auto max-w-md"><Card><h1 className="text-2xl font-bold">NeuroFlex</h1><p className="mt-1 text-sm text-muted-foreground">Personnel Stress & Welfare Support</p><form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm">Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label><label className="block text-sm">Password<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label>{error&&<p className="text-sm text-red-600">{error}</p>}<button className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">Sign in</button></form><p className="mt-4 text-xs text-muted-foreground">Prototype login. Demo password: Demo@12345. Production must use server-side authentication, secure password hashing, verified email, secure session cookies and MFA for privileged roles.</p></Card></div></div>; }\n\nfunction AppShell({lang,setLang,role,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:ReactNode}){
   const c=copy[lang]; const [open,setOpen]=useState(false); const [location]=useLocation();
   const links=[['/','home',Home],['/profile','profile',UserRound],['/health-assessment','assessment',ClipboardCheck],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]), ...(role==='clinician'?[['/clinician','clinician',HeartPulse]]:[]),['/alerts','alerts',Bell],['/counselling','counselling',HeartPulse],['/privacy','privacy',LockKeyhole]];
   return <div className="min-h-screen bg-background text-foreground">
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3"><button className="md:hidden" onClick={()=>setOpen(!open)}><Menu/></button><div className="rounded-xl bg-primary p-2 text-primary-foreground"><HeartPulse/></div><div><div className="font-bold">{c.title}</div><div className="text-xs text-muted-foreground">{c.subtitle}</div></div></div>
-      <div className="flex items-center gap-2"><select aria-label={c.language} value={lang} onChange={e=>setLang(e.target.value as Lang)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><select aria-label={c.role} value={role} onChange={e=>setRole(e.target.value as Role)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="personnel">{c.personnel}</option><option value="clinician">{c.clinician}</option><option value="welfare">{c.welfareOfficer}</option><option value="commander">{c.commander}</option><option value="admin">{c.admin}</option></select></div>
+      <div className="flex items-center gap-2"><select aria-label={c.language} value={lang} onChange={e=>setLang(e.target.value as Lang)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><span className="hidden text-xs text-muted-foreground sm:inline">{email}</span><span className="rounded-lg border px-2 py-1 text-xs font-medium">{role}</span></div>
     </div></header>
     <div className="mx-auto flex max-w-7xl"><aside className={(open?'block':'hidden')+' fixed inset-x-0 top-[65px] z-30 bg-background p-3 md:static md:block md:w-64 md:border-r md:bg-transparent md:p-4'}><nav className="space-y-1">{links.map(([href,key,Icon])=><Link key={href} href={href as string}><a onClick={()=>setOpen(false)} className={'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm '+(location===href?'bg-primary text-primary-foreground':'hover:bg-muted')}><Icon className="h-4 w-4"/>{c[key as keyof typeof c]}</a></Link>)}</nav></aside><main className="min-w-0 flex-1 p-4 md:p-6">{children}</main></div>
   </div>
@@ -572,25 +572,16 @@ function Counselling() {
 function Protected({allowed,role,children}:{allowed:Role[];role:Role;children:ReactNode}){return allowed.includes(role)?<>{children}</>:<Card><h1 className="text-xl font-bold">Authorized role required</h1><p className="mt-2 text-sm text-muted-foreground">This welfare information is restricted to authorized roles.</p></Card>}
 function App() {
   const [lang, setLang] = useState<Lang>('en');
-  const [role, setRole] = useState<Role>('personnel');
+  const [role, setRole] = useState<Role|null>(null);
+  const [email, setEmail] = useState('');
   const [personnel, setPersonnel] = useState<Personnel[]>(seedPersonnel);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('nf-lang');
-    const savedRole = localStorage.getItem('nf-role');
     const savedPersonnel = localStorage.getItem('nf-personnel');
 
     if (savedLang === 'en' || savedLang === 'ta' || savedLang === 'hi') {
       setLang(savedLang);
-    }
-    if (
-      savedRole === 'personnel' ||
-      savedRole === 'clinician' ||
-      savedRole === 'welfare' ||
-      savedRole === 'commander' ||
-      savedRole === 'admin'
-    ) {
-      setRole(savedRole);
     }
     if (savedPersonnel) {
       try {
@@ -609,12 +600,10 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
-    localStorage.setItem('nf-role', role);
-  }, [role]);
-
-  useEffect(() => {
     localStorage.setItem('nf-personnel', JSON.stringify(personnel));
   }, [personnel]);
+
+  if (!role) return <Login onLogin={(r,e)=>{setRole(r);setEmail(e)}} />;
 
   const c = copy[lang];
 
@@ -623,7 +612,6 @@ function App() {
       lang={lang}
       setLang={setLang}
       role={role}
-      setRole={setRole}
     >
       <Switch>
         <Route path="/profile">
