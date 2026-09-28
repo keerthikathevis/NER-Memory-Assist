@@ -7,7 +7,7 @@ import {
 import { Link, Route, Switch, useLocation, Router } from 'wouter';
 
 type Lang = 'en' | 'ta' | 'hi';
-type Role = 'personnel' | 'welfare' | 'commander' | 'admin';
+type Role = 'personnel' | 'clinician' | 'welfare' | 'commander' | 'admin';
 type Risk = 'LOWER' | 'MODERATE' | 'ELEVATED';
 
 type Wellness = {
@@ -46,9 +46,9 @@ function riskOf(p: Personnel): Risk {
 function riskLabel(r: Risk) { return r==='LOWER'?'Lower indicators':r==='MODERATE'?'Moderate attention':'Elevated support indicators'; }
 
 const copy = {
-  en:{title:'NeuroFlex',subtitle:'AI-Powered Personnel Stress & Welfare Support',home:'Dashboard',check:'Wellness Check-In',trends:'Wellness Trends',workload:'Duty & Workload',welfare:'Welfare Dashboard',alerts:'Alerts',privacy:'Privacy & Consent',counselling:'Counselling & Support',settings:'Settings',welcome:'Personnel Wellness Dashboard',startCheck:'Complete wellness check-in',myStatus:'My wellness status',risk:'Welfare indicator',recommend:'Recommendations',save:'Save check-in',stress:'Stress',sleep:'Sleep quality',fatigue:'Fatigue',workloadScore:'Workload',connection:'Support connection',hours:'Duty hours/week',deployment:'Deployment days',leave:'Days since leave',rest:'Rest hours/night',training:'Training load',consent:'Consent & privacy',consentText:'Wellness data is voluntary. This prototype is for welfare support, not diagnosis or disciplinary decisions.',language:'Language',role:'Role',personnel:'Personnel',welfareOfficer:'Welfare Officer',commander:'Commander',admin:'Administrator',privacyTitle:'Privacy by design',privacyBody:'Use consent, role-based access, anonymized analytics and audit trails before any real deployment.',explain:'Why this indicator?',recommendations:'Welfare recommendations',view:'View details',noAlerts:'No new welfare alerts.',demo:'Synthetic demo data',signOut:'Sign out'},
-  ta:{title:'NeuroFlex',subtitle:'AI அடிப்படையிலான பணியாளர் நலன் ஆதரவு',home:'டாஷ்போர்டு',check:'நலன் மதிப்பீடு',trends:'நலன் போக்குகள்',workload:'பணி மற்றும் சுமை',welfare:'நல அலுவலர் டாஷ்போர்டு',alerts:'எச்சரிக்கைகள்',privacy:'தனியுரிமை மற்றும் ஒப்புதல்',counselling:'ஆலோசனை மற்றும் ஆதரவு',settings:'அமைப்புகள்',welcome:'பணியாளர் நலன் டாஷ்போர்டு',startCheck:'நலன் மதிப்பீட்டை தொடங்குங்கள்',myStatus:'என் நல நிலை',risk:'நல குறியீடு',recommend:'பரிந்துரைகள்',save:'மதிப்பீட்டை சேமி',stress:'மன அழுத்தம்',sleep:'தூக்க தரம்',fatigue:'சோர்வு',workloadScore:'பணி சுமை',connection:'ஆதரவு தொடர்பு',hours:'வார பணி நேரம்',deployment:'பணியமர்த்தல் நாட்கள்',leave:'கடைசி விடுப்பிலிருந்து நாட்கள்',rest:'இரவு ஓய்வு நேரம்',training:'பயிற்சி சுமை',consent:'ஒப்புதல் மற்றும் தனியுரிமை',consentText:'நலன் தரவு தன்னார்வமானது. இது மருத்துவ நோயறிதல் அல்லது ஒழுங்கு நடவடிக்கைக்கான கருவி அல்ல.',language:'மொழி',role:'பங்கு',personnel:'பணியாளர்',welfareOfficer:'நல அலுவலர்',commander:'தளபதி',admin:'நிர்வாகி',privacyTitle:'தனியுரிமை முதன்மை',privacyBody:'உண்மையான பயன்பாட்டிற்கு முன் ஒப்புதல், பங்கு அடிப்படையிலான அணுகல், அடையாளமற்ற பகுப்பாய்வு மற்றும் audit பதிவுகள் பயன்படுத்தப்பட வேண்டும்.',explain:'இந்த குறியீடு ஏன்?',recommendations:'நலன் பரிந்துரைகள்',view:'விவரங்களை பார்க்க',noAlerts:'புதிய நல எச்சரிக்கைகள் இல்லை.',demo:'செயற்கை டெமோ தரவு',signOut:'வெளியேறு'},
-  hi:{title:'NeuroFlex',subtitle:'AI आधारित कार्मिक तनाव और कल्याण सहायता',home:'डैशबोर्ड',check:'कल्याण जांच',trends:'कल्याण रुझान',workload:'ड्यूटी और कार्यभार',welfare:'कल्याण डैशबोर्ड',alerts:'अलर्ट',privacy:'गोपनीयता और सहमति',counselling:'परामर्श और सहायता',settings:'सेटिंग्स',welcome:'कार्मिक कल्याण डैशबोर्ड',startCheck:'कल्याण जांच पूरी करें',myStatus:'मेरी कल्याण स्थिति',risk:'कल्याण संकेतक',recommend:'सिफारिशें',save:'जांच सेव करें',stress:'तनाव',sleep:'नींद की गुणवत्ता',fatigue:'थकान',workloadScore:'कार्यभार',connection:'सहायता संपर्क',hours:'साप्ताहिक ड्यूटी घंटे',deployment:'तैनाती के दिन',leave:'अवकाश से दिन',rest:'रात्रि विश्राम घंटे',training:'प्रशिक्षण भार',consent:'सहमति और गोपनीयता',consentText:'कल्याण डेटा स्वैच्छिक है। यह चिकित्सा निदान या अनुशासनात्मक निर्णय के लिए नहीं है।',language:'भाषा',role:'भूमिका',personnel:'कार्मिक',welfareOfficer:'कल्याण अधिकारी',commander:'कमांडर',admin:'प्रशासक',privacyTitle:'गोपनीयता पहले',privacyBody:'वास्तविक उपयोग से पहले सहमति, भूमिका-आधारित पहुंच, अनाम विश्लेषण और ऑडिट ट्रेल आवश्यक हैं।',explain:'यह संकेतक क्यों?',recommendations:'कल्याण सिफारिशें',view:'विवरण देखें',noAlerts:'कोई नया कल्याण अलर्ट नहीं।',demo:'सिंथेटिक डेमो डेटा',signOut:'साइन आउट'}
+  en:{title:'NeuroFlex',subtitle:'AI-Powered Personnel Stress & Welfare Support',home:'Dashboard',check:'Wellness Check-In',trends:'Wellness Trends',workload:'Duty & Workload',welfare:'Welfare Dashboard',alerts:'Alerts',privacy:'Privacy & Consent',counselling:'Counselling & Support',settings:'Settings',welcome:'Personnel Wellness Dashboard',startCheck:'Complete wellness check-in',myStatus:'My wellness status',risk:'Welfare indicator',recommend:'Recommendations',save:'Save check-in',stress:'Stress',sleep:'Sleep quality',fatigue:'Fatigue',workloadScore:'Workload',connection:'Support connection',hours:'Duty hours/week',deployment:'Deployment days',leave:'Days since leave',rest:'Rest hours/night',training:'Training load',consent:'Consent & privacy',consentText:'Wellness data is voluntary. This prototype is for welfare support, not diagnosis or disciplinary decisions.',language:'Language',role:'Role',personnel:'Personnel',clinician:'Clinician',welfareOfficer:'Welfare Officer',commander:'Commander',admin:'Administrator',privacyTitle:'Privacy by design',privacyBody:'Use consent, role-based access, anonymized analytics and audit trails before any real deployment.',explain:'Why this indicator?',recommendations:'Welfare recommendations',view:'View details',noAlerts:'No new welfare alerts.',demo:'Synthetic demo data',signOut:'Sign out'},
+  ta:{title:'NeuroFlex',subtitle:'AI அடிப்படையிலான பணியாளர் நலன் ஆதரவு',home:'டாஷ்போர்டு',check:'நலன் மதிப்பீடு',trends:'நலன் போக்குகள்',workload:'பணி மற்றும் சுமை',welfare:'நல அலுவலர் டாஷ்போர்டு',alerts:'எச்சரிக்கைகள்',privacy:'தனியுரிமை மற்றும் ஒப்புதல்',counselling:'ஆலோசனை மற்றும் ஆதரவு',settings:'அமைப்புகள்',welcome:'பணியாளர் நலன் டாஷ்போர்டு',startCheck:'நலன் மதிப்பீட்டை தொடங்குங்கள்',myStatus:'என் நல நிலை',risk:'நல குறியீடு',recommend:'பரிந்துரைகள்',save:'மதிப்பீட்டை சேமி',stress:'மன அழுத்தம்',sleep:'தூக்க தரம்',fatigue:'சோர்வு',workloadScore:'பணி சுமை',connection:'ஆதரவு தொடர்பு',hours:'வார பணி நேரம்',deployment:'பணியமர்த்தல் நாட்கள்',leave:'கடைசி விடுப்பிலிருந்து நாட்கள்',rest:'இரவு ஓய்வு நேரம்',training:'பயிற்சி சுமை',consent:'ஒப்புதல் மற்றும் தனியுரிமை',consentText:'நலன் தரவு தன்னார்வமானது. இது மருத்துவ நோயறிதல் அல்லது ஒழுங்கு நடவடிக்கைக்கான கருவி அல்ல.',language:'மொழி',role:'பங்கு',personnel:'பணியாளர்',clinician:'மருத்துவ ஆலோசகர்',welfareOfficer:'நல அலுவலர்',commander:'தளபதி',admin:'நிர்வாகி',privacyTitle:'தனியுரிமை முதன்மை',privacyBody:'உண்மையான பயன்பாட்டிற்கு முன் ஒப்புதல், பங்கு அடிப்படையிலான அணுகல், அடையாளமற்ற பகுப்பாய்வு மற்றும் audit பதிவுகள் பயன்படுத்தப்பட வேண்டும்.',explain:'இந்த குறியீடு ஏன்?',recommendations:'நலன் பரிந்துரைகள்',view:'விவரங்களை பார்க்க',noAlerts:'புதிய நல எச்சரிக்கைகள் இல்லை.',demo:'செயற்கை டெமோ தரவு',signOut:'வெளியேறு'},
+  hi:{title:'NeuroFlex',subtitle:'AI आधारित कार्मिक तनाव और कल्याण सहायता',home:'डैशबोर्ड',check:'कल्याण जांच',trends:'कल्याण रुझान',workload:'ड्यूटी और कार्यभार',welfare:'कल्याण डैशबोर्ड',alerts:'अलर्ट',privacy:'गोपनीयता और सहमति',counselling:'परामर्श और सहायता',settings:'सेटिंग्स',welcome:'कार्मिक कल्याण डैशबोर्ड',startCheck:'कल्याण जांच पूरी करें',myStatus:'मेरी कल्याण स्थिति',risk:'कल्याण संकेतक',recommend:'सिफारिशें',save:'जांच सेव करें',stress:'तनाव',sleep:'नींद की गुणवत्ता',fatigue:'थकान',workloadScore:'कार्यभार',connection:'सहायता संपर्क',hours:'साप्ताहिक ड्यूटी घंटे',deployment:'तैनाती के दिन',leave:'अवकाश से दिन',rest:'रात्रि विश्राम घंटे',training:'प्रशिक्षण भार',consent:'सहमति और गोपनीयता',consentText:'कल्याण डेटा स्वैच्छिक है। यह चिकित्सा निदान या अनुशासनात्मक निर्णय के लिए नहीं है।',language:'भाषा',role:'भूमिका',personnel:'कार्मिक',clinician:'क्लिनिशियन',welfareOfficer:'कल्याण अधिकारी',commander:'कमांडर',admin:'प्रशासक',privacyTitle:'गोपनीयता पहले',privacyBody:'वास्तविक उपयोग से पहले सहमति, भूमिका-आधारित पहुंच, अनाम विश्लेषण और ऑडिट ट्रेल आवश्यक हैं।',explain:'यह संकेतक क्यों?',recommendations:'कल्याण सिफारिशें',view:'विवरण देखें',noAlerts:'कोई नया कल्याण अलर्ट नहीं।',demo:'सिंथेटिक डेमो डेटा',signOut:'साइन आउट'}
 };
 
 function Card({children,className='' }:{children:ReactNode;className?:string}){return <section className={'rounded-2xl border bg-card p-5 shadow-sm '+className}>{children}</section>}
@@ -57,11 +57,11 @@ function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:a
 
 function AppShell({lang,setLang,role,setRole,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:ReactNode}){
   const c=copy[lang]; const [open,setOpen]=useState(false); const [location]=useLocation();
-  const links=[['/','home',Home],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]),['/alerts','alerts',Bell],['/counselling','counselling',HeartPulse],['/privacy','privacy',LockKeyhole]];
+  const links=[['/','home',Home],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]), ...(role==='clinician'?[['/clinician','clinician',HeartPulse]]:[]),['/alerts','alerts',Bell],['/counselling','counselling',HeartPulse],['/privacy','privacy',LockKeyhole]];
   return <div className="min-h-screen bg-background text-foreground">
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3"><button className="md:hidden" onClick={()=>setOpen(!open)}><Menu/></button><div className="rounded-xl bg-primary p-2 text-primary-foreground"><HeartPulse/></div><div><div className="font-bold">{c.title}</div><div className="text-xs text-muted-foreground">{c.subtitle}</div></div></div>
-      <div className="flex items-center gap-2"><select aria-label={c.language} value={lang} onChange={e=>setLang(e.target.value as Lang)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><select aria-label={c.role} value={role} onChange={e=>setRole(e.target.value as Role)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="personnel">{c.personnel}</option><option value="welfare">{c.welfareOfficer}</option><option value="commander">{c.commander}</option><option value="admin">{c.admin}</option></select></div>
+      <div className="flex items-center gap-2"><select aria-label={c.language} value={lang} onChange={e=>setLang(e.target.value as Lang)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><select aria-label={c.role} value={role} onChange={e=>setRole(e.target.value as Role)} className="rounded-lg border bg-background px-2 py-1 text-sm"><option value="personnel">{c.personnel}</option><option value="clinician">{c.clinician}</option><option value="welfare">{c.welfareOfficer}</option><option value="commander">{c.commander}</option><option value="admin">{c.admin}</option></select></div>
     </div></header>
     <div className="mx-auto flex max-w-7xl"><aside className={(open?'block':'hidden')+' fixed inset-x-0 top-[65px] z-30 bg-background p-3 md:static md:block md:w-64 md:border-r md:bg-transparent md:p-4'}><nav className="space-y-1">{links.map(([href,key,Icon])=><Link key={href} href={href as string}><a onClick={()=>setOpen(false)} className={'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm '+(location===href?'bg-primary text-primary-foreground':'hover:bg-muted')}><Icon className="h-4 w-4"/>{c[key as keyof typeof c]}</a></Link>)}</nav></aside><main className="min-w-0 flex-1 p-4 md:p-6">{children}</main></div>
   </div>
@@ -105,6 +105,83 @@ function Trends({personnel}:{personnel:Personnel[]}){const p=personnel[0]; retur
 function Workload({personnel}:{personnel:Personnel[]}){return <div className="space-y-5"><h1 className="text-2xl font-bold">Duty & Workload Analytics</h1><div className="grid gap-4 md:grid-cols-3"><Metric label="Average duty hours" value={Math.round(personnel.reduce((a,p)=>a+p.dutyHours,0)/personnel.length)+'h'} icon={Clock3}/><Metric label="Average deployment" value={Math.round(personnel.reduce((a,p)=>a+p.deploymentDays,0)/personnel.length)+' days'} icon={CalendarDays}/><Metric label="Average rest" value={(personnel.reduce((a,p)=>a+p.restHours,0)/personnel.length).toFixed(1)+'h'} icon={Moon}/></div><Card><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b"><th className="p-3">Personnel</th><th className="p-3">Duty</th><th className="p-3">Deployment</th><th className="p-3">Leave gap</th><th className="p-3">Training</th><th className="p-3">Rest</th><th className="p-3">Indicator</th></tr></thead><tbody>{personnel.map(p=><tr key={p.id} className="border-b last:border-0"><td className="p-3 font-medium">{p.id}</td><td className="p-3">{p.dutyHours}h</td><td className="p-3">{p.deploymentDays}d</td><td className="p-3">{p.leaveGap}d</td><td className="p-3">{p.trainingLoad}%</td><td className="p-3">{p.restHours}h</td><td className="p-3"><Badge risk={riskOf(p)}/></td></tr>)}</tbody></table></div></Card></div>}
 function Welfare({personnel}:{personnel:Personnel[]}){const elevated=personnel.filter(p=>riskOf(p)==='ELEVATED'), moderate=personnel.filter(p=>riskOf(p)==='MODERATE'); return <div className="space-y-5"><div><h1 className="text-2xl font-bold">Welfare Officer Dashboard</h1><p className="text-sm text-muted-foreground">Use indicators to prioritize confidential human review; do not automate disciplinary decisions.</p></div><div className="grid gap-4 sm:grid-cols-3"><Metric label="Lower" value={personnel.length-elevated.length-moderate.length} icon={CheckCircle2}/><Metric label="Moderate" value={moderate.length} icon={AlertTriangle}/><Metric label="Elevated" value={elevated.length} icon={ShieldCheck}/></div><Card><div className="space-y-3">{personnel.map(p=><div key={p.id} className="flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between"><div><div className="font-semibold">{p.id} · {p.rank}</div><div className="text-sm text-muted-foreground">{p.unit} · workload {p.wellness.workload}/5 · fatigue {p.wellness.fatigue}/5</div></div><div className="flex items-center gap-3"><Badge risk={riskOf(p)}/><span className="text-sm">{riskScore(p)} indicator score</span></div></div>)}</div></Card></div>}
 function Alerts({personnel}:{personnel:Personnel[]}){const alerts=personnel.filter(p=>riskOf(p)!=='LOWER'); return <div className="space-y-5"><h1 className="text-2xl font-bold">Welfare Alerts</h1>{alerts.length?<div className="space-y-3">{alerts.map(p=><Card key={p.id}><div className="flex gap-3"><AlertTriangle className="h-5 w-5 shrink-0"/><div className="flex-1"><div className="flex flex-wrap items-center gap-2 font-semibold">{p.id}<Badge risk={riskOf(p)}/></div><p className="mt-2 text-sm text-muted-foreground">Pattern includes {p.dutyHours} duty hours/week, {p.restHours} hours rest/night and fatigue {p.wellness.fatigue}/5.</p><p className="mt-2 text-sm">Suggested action: confidential welfare review and workload/rest assessment.</p></div></div></Card>)}</div>:<Card>{copy.en.noAlerts}</Card>}</div>}
+function ClinicianDashboard({personnel}:{personnel:Personnel[]}) {
+  const cases=personnel.filter(p=>riskOf(p)!=='LOWER');
+  const [selected,setSelected]=useState(cases[0]?.id || personnel[0]?.id || '');
+  const person=personnel.find(p=>p.id===selected) || personnel[0];
+  const [note,setNote]=useState('');
+  const [saved,setSaved]=useState(false);
+
+  if(!person) return <Card><h1 className="text-xl font-bold">Clinician Dashboard</h1><p className="mt-2 text-sm text-muted-foreground">No authorized cases are available.</p></Card>;
+
+  const saveNote=()=>{
+    if(!note.trim()) return;
+    localStorage.setItem('nf-clinician-note-'+person.id,note.trim());
+    setSaved(true);
+  };
+
+  return <div className="space-y-5">
+    <div>
+      <p className="text-sm text-muted-foreground">Authorized clinical access</p>
+      <h1 className="text-2xl font-bold">Clinician Dashboard</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Review voluntary wellness information for confidential human follow-up. Risk indicators are not diagnoses.</p>
+    </div>
+
+    <Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        <label className="block text-sm md:col-span-2">Personnel / Case
+          <select value={selected} onChange={e=>{setSelected(e.target.value);setSaved(false)}} className="mt-1 w-full rounded-xl border bg-background p-3">
+            {personnel.map(p=><option key={p.id} value={p.id}>{p.id} · {p.rank} · {p.unit}</option>)}
+          </select>
+        </label>
+        <div className="rounded-xl border p-3"><div className="text-xs text-muted-foreground">Welfare indicator</div><div className="mt-1"><Badge risk={riskOf(person)}/></div></div>
+      </div>
+    </Card>
+
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Metric label="Stress" value={person.wellness.stress+'/5'} icon={Brain}/>
+      <Metric label="Sleep" value={person.wellness.sleep+'/5'} icon={Moon}/>
+      <Metric label="Fatigue" value={person.wellness.fatigue+'/5'} icon={Activity}/>
+      <Metric label="Workload" value={person.wellness.workload+'/5'} icon={BarChart3}/>
+    </div>
+
+    <div className="grid gap-5 lg:grid-cols-2">
+      <Card>
+        <h2 className="font-semibold">Work & recovery context</h2>
+        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div className="rounded-xl border p-3"><span className="text-muted-foreground">Duty</span><div className="font-semibold">{person.dutyHours} h/week</div></div>
+          <div className="rounded-xl border p-3"><span className="text-muted-foreground">Deployment</span><div className="font-semibold">{person.deploymentDays} days</div></div>
+          <div className="rounded-xl border p-3"><span className="text-muted-foreground">Leave gap</span><div className="font-semibold">{person.leaveGap} days</div></div>
+          <div className="rounded-xl border p-3"><span className="text-muted-foreground">Rest</span><div className="font-semibold">{person.restHours} h/night</div></div>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-semibold">Clinician actions</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/counselling"><a className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">Start consultation</a></Link>
+          <button onClick={()=>window.alert('Confidential welfare follow-up flagged for human review.')} className="rounded-xl border px-4 py-2 text-sm">Flag for follow-up</button>
+        </div>
+        <p className="mt-4 text-xs text-muted-foreground">Only authorized clinicians should access identifiable welfare information. Production deployment should add authenticated accounts, server-side authorization and audit logging.</p>
+      </Card>
+    </div>
+
+    <Card>
+      <h2 className="font-semibold">Confidential clinician note</h2>
+      <textarea value={note} onChange={e=>{setNote(e.target.value);setSaved(false)}} placeholder="Record a brief follow-up note for this prototype..." className="mt-3 min-h-28 w-full rounded-xl border bg-background p-3 text-sm"/>
+      <div className="mt-3 flex items-center gap-3">
+        <button onClick={saveNote} className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">Save note</button>
+        {saved && <span className="text-sm text-muted-foreground">Saved locally for this demo.</span>}
+      </div>
+    </Card>
+
+    <Card>
+      <h2 className="font-semibold">Cases needing human review</h2>
+      <div className="mt-3 space-y-2">{cases.length ? cases.map(p=><button key={p.id} onClick={()=>setSelected(p.id)} className="flex w-full items-center justify-between rounded-xl border p-3 text-left hover:bg-muted"><span><b>{p.id}</b><span className="ml-2 text-sm text-muted-foreground">{p.rank} · {p.unit}</span></span><Badge risk={riskOf(p)}/></button>) : <p className="text-sm text-muted-foreground">No elevated or moderate indicators.</p>}</div>
+    </Card>
+  </div>;
+}
+
 function Privacy({c}:{c:any}){const [consent,setConsent]=useState(()=>localStorage.getItem('nf-consent')==='yes'); return <div className="space-y-5"><h1 className="text-2xl font-bold">{c.privacyTitle}</h1><Card><div className="grid gap-4 md:grid-cols-2"><Metric label="Consent" value="Required" icon={CheckCircle2}/><Metric label="Access" value="Role-based" icon={LockKeyhole}/><Metric label="Analytics" value="Prototype" icon={Database}/><Metric label="Audit" value="Enabled in prototype" icon={ShieldCheck}/></div><p className="mt-5 text-sm text-muted-foreground">{c.privacyBody}</p><label className="mt-5 flex items-start gap-3 rounded-xl border p-4"><input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);localStorage.setItem('nf-consent',e.target.checked?'yes':'no')}} className="mt-1"/><span className="text-sm"><b>Voluntary wellness consent</b><br/>Allow this prototype to store your wellness check-in on this device. Optional motion/biometric-style measurements remain separate and require an explicit start action.</span></label></Card><Card><h2 className="font-semibold">Data handling principles</h2><ul className="mt-3 list-disc space-y-2 pl-5 text-sm"><li>Collect only necessary welfare information.</li><li>Separate voluntary wellness data from organizational records.</li><li>Show individual details only to authorized roles.</li><li>Use synthetic/demo data during development and evaluation.</li><li>Keep human welfare review in the decision loop.</li></ul></Card></div>}
 function Counselling() {
   const [clinician, setClinician] = useState('Dr. Ananya Rao');
@@ -343,6 +420,7 @@ function App() {
     }
     if (
       savedRole === 'personnel' ||
+      savedRole === 'clinician' ||
       savedRole === 'welfare' ||
       savedRole === 'commander' ||
       savedRole === 'admin'
@@ -391,6 +469,11 @@ function App() {
         </Route>
         <Route path="/workload">
           <Workload personnel={personnel} />
+        </Route>
+        <Route path="/clinician">
+          <Protected allowed={['clinician']} role={role}>
+            <ClinicianDashboard personnel={personnel} />
+          </Protected>
         </Route>
         <Route path="/welfare">
           <Protected allowed={['welfare', 'commander', 'admin']} role={role}>
