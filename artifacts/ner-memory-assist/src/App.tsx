@@ -100,7 +100,7 @@ function Login({onLogin}:{onLogin:(role:Role,email:string,username:string)=>void
         setError('Username must contain at least 3 characters.');
         return;
       }
-      if(!/^\\S+@\\S+\\.\\S+$/.test(cleanEmail)){
+      if(!/^\S+@\S+\.\S+$/.test(cleanEmail)){
         setError('Enter a valid email address.');
         return;
       }
