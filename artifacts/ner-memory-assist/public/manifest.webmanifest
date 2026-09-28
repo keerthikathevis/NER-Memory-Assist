@@ -1,7 +1,7 @@
 {
-  "name": "NER Memory Assist",
-  "short_name": "NER Memory",
-  "description": "An offline-first memory support and daily routine companion for families and care teams in the North Eastern Region of India.",
+  "name": "NeuroFlex",
+  "short_name": "NeuroFlex",
+  "description": "An offline-first memory support and daily routine companion for families and care teams in the North Eastern Region of India, with personalized memory and daily-routine support.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
