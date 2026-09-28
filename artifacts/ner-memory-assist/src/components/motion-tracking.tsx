@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Activity, Camera, CameraOff, RotateCcw, ShieldCheck } from 'lucide-react';
+import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 
 type Point = { x: number; y: number; z?: number; visibility?: number };
 type PoseResult = { landmarks?: Point[][] };
 
-const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
-const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm';
-const VISION_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/vision_bundle.mjs';
+const MODEL_URL = '/mediapipe/pose_landmarker_full.task';
+const WASM_URL = '/mediapipe/wasm';
 
 const CONNECTIONS: [number, number][] = [
   [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
@@ -187,9 +186,8 @@ export function MotionTracking() {
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
 
-      const vision = await import(/* @vite-ignore */ VISION_URL);
-      const resolver = await vision.FilesetResolver.forVisionTasks(WASM_URL);
-      landmarkerRef.current = await vision.PoseLandmarker.createFromOptions(resolver, {
+      const resolver = await FilesetResolver.forVisionTasks(WASM_URL);
+      landmarkerRef.current = await PoseLandmarker.createFromOptions(resolver, {
         baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
         runningMode: 'VIDEO',
         numPoses: 1,
