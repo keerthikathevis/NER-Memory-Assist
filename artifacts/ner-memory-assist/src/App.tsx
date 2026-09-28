@@ -113,8 +113,6 @@ function Counselling(){
   const [room,setRoom]=useState(false);
   const [chat,setChat]=useState<string[]>([]);
   const [msg,setMsg]=useState('');
-  const videoRef=useState<HTMLVideoElement|null>(null)[0];
-  const videoEl=useState<HTMLVideoElement|null>(null);
   const [stream,setStream]=useState<MediaStream|null>(null);
   const join=async()=>{setRoom(true); try{const st=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); setStream(st); setTimeout(()=>{const v=document.getElementById('nf-local-video') as HTMLVideoElement|null; if(v){v.srcObject=st; v.play().catch(()=>{});}},50);}catch{}}
   const leave=()=>{stream?.getTracks().forEach(t=>t.stop());setStream(null);setRoom(false)};
