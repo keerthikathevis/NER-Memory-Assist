@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity, Camera, CameraOff, RotateCcw, ShieldCheck } from 'lucide-react';
-import { SectionCard, Badge, PageIntro, StatCard } from '@/components/ui/app-ui';
 
 type Point = { x: number; y: number; z?: number; visibility?: number };
 type PoseResult = { landmarks?: Point[][] };
@@ -25,6 +24,33 @@ const angle = (a: Point, b: Point, c: Point) => {
   return mag ? Math.round((Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180) / Math.PI) : 0;
 };
 
+
+function SectionCard({ className = '', children }: { className?: string; children: React.ReactNode }) {
+  return <section className={`rounded-3xl border bg-[hsl(var(--card))] p-5 shadow-sm ${className}`}>{children}</section>;
+}
+
+function PageIntro({ icon: Icon, title, hint }: { icon: typeof Activity; title: string; hint: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="rounded-2xl bg-[hsl(var(--primary)/.1)] p-3 text-[hsl(var(--primary))]"><Icon size={24} /></div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{hint}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-2xl border bg-[hsl(var(--card))] p-4">
+      <p className="text-sm text-[hsl(var(--muted-foreground))]">{label}</p>
+      <p className="mt-1 text-2xl font-bold">{value}</p>
+      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{detail}</p>
+    </div>
+  );
+}
+
 export function MotionTracking() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,8 +73,8 @@ export function MotionTracking() {
   const [repetitions, setRepetitions] = useState(0);
   const [fatigue, setFatigue] = useState('Stable');
   const [reactionTime, setReactionTime] = useState('—');
-  const [startedAt, setStartedAt] = useState<number | null>(null);
   const [goAt, setGoAt] = useState<number | null>(null);
+  const goAtRef = useRef<number | null>(null);
 
   const stop = () => {
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -127,8 +153,10 @@ export function MotionTracking() {
       speedSamplesRef.current.push(pxPerSecond);
       if (speedSamplesRef.current.length > 120) speedSamplesRef.current.shift();
 
-      if (goAt && speed > 10 && !reactionTime.includes('ms')) {
-        setReactionTime(String(Math.round(now - goAt)) + ' ms');
+      const reactionStart = goAtRef.current;
+      if (reactionStart !== null && now >= reactionStart && speed > 10 && !reactionTime.includes('ms')) {
+        setReactionTime(String(Math.round(now - reactionStart)) + ' ms');
+        goAtRef.current = null;
       }
     }
     lastFrameRef.current = { time: now, wristX: lWrist.x, wristY: lWrist.y };
@@ -171,8 +199,10 @@ export function MotionTracking() {
       });
 
       setRunning(true);
-      setStartedAt(Date.now());
-      setGoAt(Date.now() + 3000);
+      const startTime = performance.now();
+      const reactionStart = startTime + 3000;
+      goAtRef.current = reactionStart;
+      setGoAt(reactionStart);
       setRepetitions(0);
       setReactionTime('—');
       speedSamplesRef.current = [];
@@ -204,6 +234,8 @@ export function MotionTracking() {
     setFatigue('Stable');
     speedSamplesRef.current = [];
     shoulderSamplesRef.current = [];
+    goAtRef.current = null;
+    setGoAt(null);
   };
 
   return (
