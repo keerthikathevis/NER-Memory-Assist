@@ -48,9 +48,9 @@ function riskOf(p: Personnel): Risk {
 function riskLabel(r: Risk) { return r==='LOWER'?'Lower indicators':r==='MODERATE'?'Moderate attention':'Elevated support indicators'; }
 
 const copy = {
-  en:{title:'NeuroFlex',subtitle:'AI-Powered Personnel Stress & Welfare Support',home:'Dashboard',profile:'My Profile',check:'Wellness Check-In',trends:'Wellness Trends',workload:'Duty & Workload',welfare:'Welfare Dashboard',alerts:'Alerts',privacy:'Privacy & Consent',counselling:'Counselling & Support',settings:'Settings',welcome:'Personnel Wellness Dashboard',startCheck:'Complete wellness check-in',myStatus:'My wellness status',risk:'Welfare indicator',recommend:'Recommendations',save:'Save check-in',stress:'Stress',sleep:'Sleep quality',fatigue:'Fatigue',workloadScore:'Workload',connection:'Support connection',hours:'Duty hours/week',deployment:'Deployment days',leave:'Days since leave',rest:'Rest hours/night',training:'Training load',consent:'Consent & privacy',consentText:'Wellness data is voluntary. This prototype is for welfare support, not diagnosis or disciplinary decisions.',language:'Language',role:'Role',personnel:'Personnel',clinician:'Clinician',welfareOfficer:'Welfare Officer',commander:'Commander',admin:'Administrator',privacyTitle:'Privacy by design',privacyBody:'Use consent, role-based access, data minimization, secure storage and audit trails before any real deployment.',explain:'Why this indicator?',recommendations:'Welfare recommendations',view:'View details',noAlerts:'No new welfare alerts.',demo:'Synthetic demo data',signOut:'Sign out'},
-  ta:{title:'NeuroFlex',subtitle:'AI அடிப்படையிலான பணியாளர் நலன் ஆதரவு',home:'டாஷ்போர்டு',profile:'என் சுயவிவரம்',check:'நலன் மதிப்பீடு',trends:'நலன் போக்குகள்',workload:'பணி மற்றும் சுமை',welfare:'நல அலுவலர் டாஷ்போர்டு',alerts:'எச்சரிக்கைகள்',privacy:'தனியுரிமை மற்றும் ஒப்புதல்',counselling:'ஆலோசனை மற்றும் ஆதரவு',settings:'அமைப்புகள்',welcome:'பணியாளர் நலன் டாஷ்போர்டு',startCheck:'நலன் மதிப்பீட்டை தொடங்குங்கள்',myStatus:'என் நல நிலை',risk:'நல குறியீடு',recommend:'பரிந்துரைகள்',save:'மதிப்பீட்டை சேமி',stress:'மன அழுத்தம்',sleep:'தூக்க தரம்',fatigue:'சோர்வு',workloadScore:'பணி சுமை',connection:'ஆதரவு தொடர்பு',hours:'வார பணி நேரம்',deployment:'பணியமர்த்தல் நாட்கள்',leave:'கடைசி விடுப்பிலிருந்து நாட்கள்',rest:'இரவு ஓய்வு நேரம்',training:'பயிற்சி சுமை',consent:'ஒப்புதல் மற்றும் தனியுரிமை',consentText:'நலன் தரவு தன்னார்வமானது. இது மருத்துவ நோயறிதல் அல்லது ஒழுங்கு நடவடிக்கைக்கான கருவி அல்ல.',language:'மொழி',role:'பங்கு',personnel:'பணியாளர்',clinician:'மருத்துவ ஆலோசகர்',welfareOfficer:'நல அலுவலர்',commander:'தளபதி',admin:'நிர்வாகி',privacyTitle:'தனியுரிமை முதன்மை',privacyBody:'உண்மையான பயன்பாட்டிற்கு முன் ஒப்புதல், பங்கு அடிப்படையிலான அணுகல், அடையாளமற்ற பகுப்பாய்வு மற்றும் audit பதிவுகள் பயன்படுத்தப்பட வேண்டும்.',explain:'இந்த குறியீடு ஏன்?',recommendations:'நலன் பரிந்துரைகள்',view:'விவரங்களை பார்க்க',noAlerts:'புதிய நல எச்சரிக்கைகள் இல்லை.',demo:'செயற்கை டெமோ தரவு',signOut:'வெளியேறு'},
-  hi:{title:'NeuroFlex',subtitle:'AI आधारित कार्मिक तनाव और कल्याण सहायता',home:'डैशबोर्ड',profile:'मेरी प्रोफ़ाइल',check:'कल्याण जांच',trends:'कल्याण रुझान',workload:'ड्यूटी और कार्यभार',welfare:'कल्याण डैशबोर्ड',alerts:'अलर्ट',privacy:'गोपनीयता और सहमति',counselling:'परामर्श और सहायता',settings:'सेटिंग्स',welcome:'कार्मिक कल्याण डैशबोर्ड',startCheck:'कल्याण जांच पूरी करें',myStatus:'मेरी कल्याण स्थिति',risk:'कल्याण संकेतक',recommend:'सिफारिशें',save:'जांच सेव करें',stress:'तनाव',sleep:'नींद की गुणवत्ता',fatigue:'थकान',workloadScore:'कार्यभार',connection:'सहायता संपर्क',hours:'साप्ताहिक ड्यूटी घंटे',deployment:'तैनाती के दिन',leave:'अवकाश से दिन',rest:'रात्रि विश्राम घंटे',training:'प्रशिक्षण भार',consent:'सहमति और गोपनीयता',consentText:'कल्याण डेटा स्वैच्छिक है। यह चिकित्सा निदान या अनुशासनात्मक निर्णय के लिए नहीं है।',language:'भाषा',role:'भूमिका',personnel:'कार्मिक',clinician:'क्लिनिशियन',welfareOfficer:'कल्याण अधिकारी',commander:'कमांडर',admin:'प्रशासक',privacyTitle:'गोपनीयता पहले',privacyBody:'वास्तविक उपयोग से पहले सहमति, भूमिका-आधारित पहुंच, अनाम विश्लेषण और ऑडिट ट्रेल आवश्यक हैं।',explain:'यह संकेतक क्यों?',recommendations:'कल्याण सिफारिशें',view:'विवरण देखें',noAlerts:'कोई नया कल्याण अलर्ट नहीं।',demo:'सिंथेटिक डेमो डेटा',signOut:'साइन आउट'}
+  en:{title:'NeuroFlex',subtitle:'AI-Powered Personnel Stress & Welfare Support',home:'Dashboard',profile:'My Profile',assessment:'Occupational Health Assessment',check:'Wellness Check-In',trends:'Wellness Trends',workload:'Duty & Workload',welfare:'Welfare Dashboard',alerts:'Alerts',privacy:'Privacy & Consent',counselling:'Counselling & Support',settings:'Settings',welcome:'Personnel Wellness Dashboard',startCheck:'Complete wellness check-in',myStatus:'My wellness status',risk:'Welfare indicator',recommend:'Recommendations',save:'Save check-in',stress:'Stress',sleep:'Sleep quality',fatigue:'Fatigue',workloadScore:'Workload',connection:'Support connection',hours:'Duty hours/week',deployment:'Deployment days',leave:'Days since leave',rest:'Rest hours/night',training:'Training load',consent:'Consent & privacy',consentText:'Wellness data is voluntary. This prototype is for welfare support, not diagnosis or disciplinary decisions.',language:'Language',role:'Role',personnel:'Personnel',clinician:'Clinician',welfareOfficer:'Welfare Officer',commander:'Commander',admin:'Administrator',privacyTitle:'Privacy by design',privacyBody:'Use consent, role-based access, data minimization, secure storage and audit trails before any real deployment.',explain:'Why this indicator?',recommendations:'Welfare recommendations',view:'View details',noAlerts:'No new welfare alerts.',demo:'Synthetic demo data',signOut:'Sign out'},
+  ta:{title:'NeuroFlex',subtitle:'AI அடிப்படையிலான பணியாளர் நலன் ஆதரவு',home:'டாஷ்போர்டு',profile:'என் சுயவிவரம்',assessment:'தொழில்சார் நலன் மதிப்பீடு',check:'நலன் மதிப்பீடு',trends:'நலன் போக்குகள்',workload:'பணி மற்றும் சுமை',welfare:'நல அலுவலர் டாஷ்போர்டு',alerts:'எச்சரிக்கைகள்',privacy:'தனியுரிமை மற்றும் ஒப்புதல்',counselling:'ஆலோசனை மற்றும் ஆதரவு',settings:'அமைப்புகள்',welcome:'பணியாளர் நலன் டாஷ்போர்டு',startCheck:'நலன் மதிப்பீட்டை தொடங்குங்கள்',myStatus:'என் நல நிலை',risk:'நல குறியீடு',recommend:'பரிந்துரைகள்',save:'மதிப்பீட்டை சேமி',stress:'மன அழுத்தம்',sleep:'தூக்க தரம்',fatigue:'சோர்வு',workloadScore:'பணி சுமை',connection:'ஆதரவு தொடர்பு',hours:'வார பணி நேரம்',deployment:'பணியமர்த்தல் நாட்கள்',leave:'கடைசி விடுப்பிலிருந்து நாட்கள்',rest:'இரவு ஓய்வு நேரம்',training:'பயிற்சி சுமை',consent:'ஒப்புதல் மற்றும் தனியுரிமை',consentText:'நலன் தரவு தன்னார்வமானது. இது மருத்துவ நோயறிதல் அல்லது ஒழுங்கு நடவடிக்கைக்கான கருவி அல்ல.',language:'மொழி',role:'பங்கு',personnel:'பணியாளர்',clinician:'மருத்துவ ஆலோசகர்',welfareOfficer:'நல அலுவலர்',commander:'தளபதி',admin:'நிர்வாகி',privacyTitle:'தனியுரிமை முதன்மை',privacyBody:'உண்மையான பயன்பாட்டிற்கு முன் ஒப்புதல், பங்கு அடிப்படையிலான அணுகல், அடையாளமற்ற பகுப்பாய்வு மற்றும் audit பதிவுகள் பயன்படுத்தப்பட வேண்டும்.',explain:'இந்த குறியீடு ஏன்?',recommendations:'நலன் பரிந்துரைகள்',view:'விவரங்களை பார்க்க',noAlerts:'புதிய நல எச்சரிக்கைகள் இல்லை.',demo:'செயற்கை டெமோ தரவு',signOut:'வெளியேறு'},
+  hi:{title:'NeuroFlex',subtitle:'AI आधारित कार्मिक तनाव और कल्याण सहायता',home:'डैशबोर्ड',profile:'मेरी प्रोफ़ाइल',assessment:'व्यावसायिक स्वास्थ्य आकलन',check:'कल्याण जांच',trends:'कल्याण रुझान',workload:'ड्यूटी और कार्यभार',welfare:'कल्याण डैशबोर्ड',alerts:'अलर्ट',privacy:'गोपनीयता और सहमति',counselling:'परामर्श और सहायता',settings:'सेटिंग्स',welcome:'कार्मिक कल्याण डैशबोर्ड',startCheck:'कल्याण जांच पूरी करें',myStatus:'मेरी कल्याण स्थिति',risk:'कल्याण संकेतक',recommend:'सिफारिशें',save:'जांच सेव करें',stress:'तनाव',sleep:'नींद की गुणवत्ता',fatigue:'थकान',workloadScore:'कार्यभार',connection:'सहायता संपर्क',hours:'साप्ताहिक ड्यूटी घंटे',deployment:'तैनाती के दिन',leave:'अवकाश से दिन',rest:'रात्रि विश्राम घंटे',training:'प्रशिक्षण भार',consent:'सहमति और गोपनीयता',consentText:'कल्याण डेटा स्वैच्छिक है। यह चिकित्सा निदान या अनुशासनात्मक निर्णय के लिए नहीं है।',language:'भाषा',role:'भूमिका',personnel:'कार्मिक',clinician:'क्लिनिशियन',welfareOfficer:'कल्याण अधिकारी',commander:'कमांडर',admin:'प्रशासक',privacyTitle:'गोपनीयता पहले',privacyBody:'वास्तविक उपयोग से पहले सहमति, भूमिका-आधारित पहुंच, अनाम विश्लेषण और ऑडिट ट्रेल आवश्यक हैं।',explain:'यह संकेतक क्यों?',recommendations:'कल्याण सिफारिशें',view:'विवरण देखें',noAlerts:'कोई नया कल्याण अलर्ट नहीं।',demo:'सिंथेटिक डेमो डेटा',signOut:'साइन आउट'}
 };
 
 function Card({children,className='' }:{children:ReactNode;className?:string}){return <section className={'rounded-2xl border bg-card p-5 shadow-sm '+className}>{children}</section>}
@@ -59,7 +59,7 @@ function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:a
 
 function AppShell({lang,setLang,role,setRole,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:ReactNode}){
   const c=copy[lang]; const [open,setOpen]=useState(false); const [location]=useLocation();
-  const links=[['/','home',Home],['/profile','profile',UserRound],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]), ...(role==='clinician'?[['/clinician','clinician',HeartPulse]]:[]),['/alerts','alerts',Bell],['/counselling','counselling',HeartPulse],['/privacy','privacy',LockKeyhole]];
+  const links=[['/','home',Home],['/profile','profile',UserRound],['/health-assessment','assessment',ClipboardCheck],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]), ...(role==='clinician'?[['/clinician','clinician',HeartPulse]]:[]),['/alerts','alerts',Bell],['/counselling','counselling',HeartPulse],['/privacy','privacy',LockKeyhole]];
   return <div className="min-h-screen bg-background text-foreground">
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3"><button className="md:hidden" onClick={()=>setOpen(!open)}><Menu/></button><div className="rounded-xl bg-primary p-2 text-primary-foreground"><HeartPulse/></div><div><div className="font-bold">{c.title}</div><div className="text-xs text-muted-foreground">{c.subtitle}</div></div></div>
@@ -222,6 +222,127 @@ function ClinicianDashboard({personnel}:{personnel:Personnel[]}) {
     <Card>
       <h2 className="font-semibold">Cases needing human review</h2>
       <div className="mt-3 space-y-2">{cases.length ? cases.map(p=><button key={p.id} onClick={()=>setSelected(p.id)} className="flex w-full items-center justify-between rounded-xl border p-3 text-left hover:bg-muted"><span><b>{p.id}</b><span className="ml-2 text-sm text-muted-foreground">{p.rank} · {p.unit}</span></span><Badge risk={riskOf(p)}/></button>) : <p className="text-sm text-muted-foreground">No elevated or moderate indicators.</p>}</div>
+    </Card>
+  </div>;
+}
+
+function HealthAssessment({personnel}:{personnel:Personnel[]}) {
+  const person=personnel[0];
+  const storageKey='nf-occupational-assessment-'+person.id;
+  const [form,setForm]=useState(() => {
+    try {
+      const saved=localStorage.getItem(storageKey);
+      if(saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      dutyHours: person.dutyHours,
+      averageDutyDuration: '',
+      consecutiveDutyDays: '',
+      nightShifts: '',
+      trainingHours: '',
+      restInterval: '',
+      deploymentDays: person.deploymentDays,
+      leaveGap: person.leaveGap,
+      additionalAssignments: '',
+      sleepHours: '',
+      sleepQuality: person.wellness.sleep,
+      perceivedStress: person.wellness.stress,
+      fatigue: person.wellness.fatigue,
+      workloadPerception: person.wellness.workload,
+      concentrationConcern: '',
+      emotionalWellbeing: '',
+      supportConnection: person.wellness.connection,
+      workLifeConcern: '',
+      counsellingInterest: '',
+      assessmentFramework: 'Structured worker well-being assessment',
+      clinicianReview: 'Pending human review',
+      clinicianNotes: ''
+    };
+  });
+  const [saved,setSaved]=useState(false);
+
+  const update=(key:string,value:string|number)=>setForm((v:any)=>({...v,[key]:value}));
+  const save=()=>{
+    localStorage.setItem(storageKey,JSON.stringify(form));
+    setSaved(true);
+  };
+  const field=(key:string,label:string,type='text',placeholder='')=>
+    <label className="block text-sm">{label}
+      <input type={type} value={form[key] ?? ''} onChange={e=>update(key,type==='number'?Number(e.target.value):e.target.value)} placeholder={placeholder} className="mt-1 w-full rounded-xl border bg-background p-3"/>
+    </label>;
+  const select=(key:string,label:string,options:string[])=>
+    <label className="block text-sm">{label}
+      <select value={form[key] ?? ''} onChange={e=>update(key,e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3">
+        <option value="">Select</option>{options.map(o=><option key={o}>{o}</option>)}
+      </select>
+    </label>;
+
+  return <div className="space-y-5">
+    <div>
+      <p className="text-sm text-muted-foreground">Occupational health & psychosocial risk</p>
+      <h1 className="text-2xl font-bold">Occupational Health & Wellness Assessment</h1>
+      <p className="mt-1 text-sm text-muted-foreground">A structured section that separates official work-pattern information from voluntary self-reported wellness information for authorized human review.</p>
+    </div>
+
+    <Card>
+      <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-5 w-5"/>1. Official work & recovery data</div>
+      <p className="mt-1 text-xs text-muted-foreground">These fields should come from authorized duty, deployment, training and personnel systems in production—not be inferred by AI.</p>
+      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {field('dutyHours','Duty hours / week','number')}
+        {field('averageDutyDuration','Average duty duration / hours','number')}
+        {field('consecutiveDutyDays','Consecutive duty days','number')}
+        {field('nightShifts','Night shifts / month','number')}
+        {field('trainingHours','Training hours / week','number')}
+        {field('restInterval','Typical rest interval / hours','number')}
+        {field('deploymentDays','Current deployment days','number')}
+        {field('leaveGap','Days since last leave','number')}
+        {field('additionalAssignments','Additional assignments','text','Optional description')}
+      </div>
+    </Card>
+
+    <Card>
+      <div className="flex items-center gap-2 font-semibold"><HeartPulse className="h-5 w-5"/>2. Voluntary self-reported wellness</div>
+      <p className="mt-1 text-xs text-muted-foreground">This section records the person's own experience. It is not an official service record and should never be treated as a diagnosis.</p>
+      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {field('sleepHours','Typical sleep / hours per night','number')}
+        {field('sleepQuality','Sleep / recovery quality (1–5)','number')}
+        {field('perceivedStress','Perceived stress (1–5)','number')}
+        {field('fatigue','Fatigue (1–5)','number')}
+        {field('workloadPerception','Perceived workload (1–5)','number')}
+        {field('supportConnection','Support connection (1–5)','number')}
+        {select('concentrationConcern','Concentration concern',['None reported','Occasional concern','Frequent concern','Needs human review'])}
+        {select('emotionalWellbeing','Emotional well-being',['No concern reported','Some concern','Significant concern','Needs human review'])}
+        {select('workLifeConcern','Work-life concern',['None reported','Some concern','Significant concern','Needs human review'])}
+        {select('counsellingInterest','Counselling / support preference',['Not requested','Would like information','Would like an appointment'])}
+      </div>
+    </Card>
+
+    <Card>
+      <div className="flex items-center gap-2 font-semibold"><ClipboardCheck className="h-5 w-5"/>3. Professional assessment workflow</div>
+      <p className="mt-1 text-xs text-muted-foreground">NeuroFlex can organize information for review, but a clinician—not the AI—determines whether further assessment or support is appropriate.</p>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {select('assessmentFramework','Assessment framework',['Structured worker well-being assessment','Occupational health interview','Clinician-selected validated instrument'])}
+        {select('clinicianReview','Clinician review status',['Pending human review','Further evaluation recommended','Support / counselling recommended','Assessment completed — no current concern identified'])}
+      </div>
+      <label className="mt-4 block text-sm">Clinician assessment notes
+        <textarea value={form.clinicianNotes ?? ''} onChange={e=>update('clinicianNotes',e.target.value)} placeholder="For authorized clinician use only" className="mt-1 min-h-28 w-full rounded-xl border bg-background p-3"/>
+      </label>
+      <div className="mt-4 flex items-center gap-3">
+        <button onClick={save} className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">Save assessment</button>
+        {saved && <span className="text-sm text-muted-foreground">Saved locally for this prototype.</span>}
+      </div>
+    </Card>
+
+    <Card>
+      <div className="rounded-xl border p-4">
+        <h2 className="font-semibold">Clinical interpretation boundary</h2>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+          <li>Workload, long hours, shift work, time pressure and limited support are recognized psychosocial risk factors; they are not diagnostic on their own.</li>
+          <li>Sleep, fatigue, perceived stress and well-being can support a structured assessment, but they do not by themselves confirm a mental health condition.</li>
+          <li>A clinician should combine the person's report with interview, relevant records and an appropriate validated instrument when clinically indicated.</li>
+          <li>NeuroFlex produces a welfare indicator for human review; it does not diagnose stress, burnout, anxiety, depression or another medical condition.</li>
+        </ul>
+      </div>
     </Card>
   </div>;
 }
@@ -508,7 +629,7 @@ function App() {
         <Route path="/profile">
           <Profile lang={lang} personnel={personnel} setPersonnel={setPersonnel} />
         </Route>
-        <Route path="/check-in">
+        <Route path="/health-assessment">\n          <HealthAssessment personnel={personnel} />\n        </Route>\n        <Route path="/check-in">
           <CheckIn lang={lang} setPersonnel={setPersonnel} />
         </Route>
         <Route path="/trends">
