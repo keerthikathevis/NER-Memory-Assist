@@ -22,6 +22,7 @@ import { dateKey, isScheduledForDate, type MedicineEvent, type MedicineEventStat
 import { notificationPermission, requestNotificationPermission, sendMedicineNotification } from '@/lib/notifications';
 import { clearLocalDataMirror, clearMedicineData, getEmergencyContacts, saveEmergencyContacts, getGameResults, getMedicineEvents, getMedicineSchedules, getMemoryProfiles, readStore, saveGameResult, saveMedicineEvent, saveMedicineSchedules, type EmergencyContact, type MemoryProfile, writeStore } from '@/lib/storage';
 import { clearSyncQueue, getSyncQueue, resolveSyncConflict, syncService, type SyncRecord } from '@/lib/sync-service';
+import { MotionTracking } from '@/components/motion-tracking';
 
 const queryClient = new QueryClient();
 
@@ -192,7 +193,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
   }, []);
 
   const nav: [string, CopyKey, LucideIcon][] = [
-    ['/patient', 'home', HomeIcon], ['/games', 'games', Gamepad2], ['/medicine', 'medicine', Bell],
+    ['/patient', 'home', HomeIcon], ['/games', 'games', Gamepad2], ['/motion', 'motionTracking', Activity], ['/medicine', 'medicine', Bell],
     ['/memories', 'memories', UsersRound], ['/emergency', 'Emergency & Help', ShieldCheck], ['/progress', 'progress', Activity],
   ];
 
@@ -1087,7 +1088,7 @@ function MedicineNotificationScheduler({ lang }: { lang: Lang }) {
 
 function Router() {
   const { lang, role, setLang, setRole } = useAppPrefs();
-  return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><AppFrame lang={lang} role={role}><Switch><Route path="/patient"><PatientHome lang={lang} /></Route><Route path="/games"><Games lang={lang} /></Route><Route path="/medicine"><Medicine lang={lang} role={role} /></Route><Route path="/memories"><Memories lang={lang} role={role} /></Route><Route path="/emergency"><EmergencyHelp lang={lang} role={role} /></Route><Route path="/progress"><Progress lang={lang} /></Route><Route path="/caregiver"><Caregiver lang={lang} /></Route><Route path="/healthcare"><Healthcare lang={lang} /></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><Link href="/patient">{tr(lang, 'goHome')}</Link></Route></Switch></AppFrame></Route></Switch>;
+  return <Switch><Route path="/"><Welcome lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><AppFrame lang={lang} role={role}><Switch><Route path="/patient"><PatientHome lang={lang} /></Route><Route path="/games"><Games lang={lang} /></Route><Route path="/motion"><MotionTracking /></Route><Route path="/medicine"><Medicine lang={lang} role={role} /></Route><Route path="/memories"><Memories lang={lang} role={role} /></Route><Route path="/emergency"><EmergencyHelp lang={lang} role={role} /></Route><Route path="/progress"><Progress lang={lang} /></Route><Route path="/caregiver"><Caregiver lang={lang} /></Route><Route path="/healthcare"><Healthcare lang={lang} /></Route><Route path="/settings"><Settings lang={lang} role={role} setLang={setLang} setRole={setRole} /></Route><Route><Link href="/patient">{tr(lang, 'goHome')}</Link></Route></Switch></AppFrame></Route></Switch>;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
