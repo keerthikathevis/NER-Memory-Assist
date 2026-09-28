@@ -43,6 +43,7 @@ export const copy = {
     music: 'Music',
     memories: 'Memories',
     progress: 'Progress',
+    motionTracking: 'Motion Tracking',
     settings: 'Settings',
     caregiverView: 'Caregiver view',
     healthcareView: 'Healthcare view',
