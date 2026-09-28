@@ -124,5 +124,68 @@ function Counselling(){
 }
 
 function Protected({allowed,role,children}:{allowed:Role[];role:Role;children:ReactNode}){return allowed.includes(role)?<>{children}</>:<Card><h1 className="text-xl font-bold">Authorized role required</h1><p className="mt-2 text-sm text-muted-foreground">This welfare information is restricted to authorized roles.</p></Card>}
-function App(){const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('nf-lang') as Lang)||'en'); const [role,setRole]=useState<Role>(()=>(localStorage.getItem('nf-role') as Role)||'personnel'); const [personnel,setPersonnel]=useState<Personnel[]>(()=>{try{return JSON.parse(localStorage.getItem('nf-personnel')||'null')||seedPersonnel}catch{return seedPersonnel}}); useEffect(()=>localStorage.setItem('nf-lang',lang),[lang]); useEffect(()=>localStorage.setItem('nf-role',role),[role]); useEffect(()=>localStorage.setItem('nf-personnel',JSON.stringify(personnel)),[personnel]); const c=copy[lang]; return <AppShell lang={lang} setLang={setLang} role={role} setRole={setRole}><Switch><Route path="/check-in"><CheckIn lang={lang} setPersonnel={setPersonnel}/></Route><Route path="/trends"><Trends personnel={personnel}/></Route><Route path="/workload"><Workload personnel={personnel}/></Route><Route path="/welfare"><Protected allowed={["welfare","commander","admin"]} role={role}><Welfare personnel={personnel}/></Protected></Route><Route path="/alerts"><Protected allowed={["welfare","commander","admin"]} role={role}><Alerts personnel={personnel}/></Protected></Route><Route path="/counselling"><Counselling/></Route><Route path="/privacy"><Privacy c={c}/></Route><Route><HomePage c={c} personnel={personnel}/></Route></Switch></AppShell>}
-export default function Root(){return <Router><App/></Router>}
+function App() {
+  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('nf-lang') as Lang) || 'en');
+  const [role, setRole] = useState<Role>(() => (localStorage.getItem('nf-role') as Role) || 'personnel');
+  const [personnel, setPersonnel] = useState<Personnel[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('nf-personnel') || 'null') || seedPersonnel;
+    } catch {
+      return seedPersonnel;
+    }
+  });
+
+  useEffect(() => localStorage.setItem('nf-lang', lang), [lang]);
+  useEffect(() => localStorage.setItem('nf-role', role), [role]);
+  useEffect(() => localStorage.setItem('nf-personnel', JSON.stringify(personnel)), [personnel]);
+
+  const c = copy[lang];
+
+  return (
+    <AppShell
+      lang={lang}
+      setLang={setLang}
+      role={role}
+      setRole={setRole}
+    >
+      <Switch>
+        <Route path="/check-in">
+          <CheckIn lang={lang} setPersonnel={setPersonnel} />
+        </Route>
+        <Route path="/trends">
+          <Trends personnel={personnel} />
+        </Route>
+        <Route path="/workload">
+          <Workload personnel={personnel} />
+        </Route>
+        <Route path="/welfare">
+          <Protected allowed={['welfare', 'commander', 'admin']} role={role}>
+            <Welfare personnel={personnel} />
+          </Protected>
+        </Route>
+        <Route path="/alerts">
+          <Protected allowed={['welfare', 'commander', 'admin']} role={role}>
+            <Alerts personnel={personnel} />
+          </Protected>
+        </Route>
+        <Route path="/counselling">
+          <Counselling />
+        </Route>
+        <Route path="/privacy">
+          <Privacy c={c} />
+        </Route>
+        <Route>
+          <HomePage c={c} personnel={personnel} />
+        </Route>
+      </Switch>
+    </AppShell>
+  );
+}
+
+export default function Root() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}
