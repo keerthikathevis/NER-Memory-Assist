@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, Bell, CheckCircle2, ClipboardCheck, Clock3,
   HeartPulse, Home, Languages, LockKeyhole, Menu, Mic, Moon, ShieldCheck, UserRound,
@@ -52,11 +52,11 @@ const copy = {
   hi:{title:'NeuroFlex',subtitle:'AI आधारित कार्मिक तनाव और कल्याण सहायता',home:'डैशबोर्ड',check:'कल्याण जांच',trends:'कल्याण रुझान',workload:'ड्यूटी और कार्यभार',welfare:'कल्याण डैशबोर्ड',alerts:'अलर्ट',privacy:'गोपनीयता और सहमति',motion:'मोशन ट्रैकिंग',settings:'सेटिंग्स',welcome:'कार्मिक कल्याण डैशबोर्ड',startCheck:'कल्याण जांच पूरी करें',myStatus:'मेरी कल्याण स्थिति',risk:'कल्याण संकेतक',recommend:'सिफारिशें',save:'जांच सेव करें',stress:'तनाव',sleep:'नींद की गुणवत्ता',fatigue:'थकान',workloadScore:'कार्यभार',connection:'सहायता संपर्क',hours:'साप्ताहिक ड्यूटी घंटे',deployment:'तैनाती के दिन',leave:'अवकाश से दिन',rest:'रात्रि विश्राम घंटे',training:'प्रशिक्षण भार',consent:'सहमति और गोपनीयता',consentText:'कल्याण डेटा स्वैच्छिक है। यह चिकित्सा निदान या अनुशासनात्मक निर्णय के लिए नहीं है।',language:'भाषा',role:'भूमिका',personnel:'कार्मिक',welfareOfficer:'कल्याण अधिकारी',commander:'कमांडर',admin:'प्रशासक',privacyTitle:'गोपनीयता पहले',privacyBody:'वास्तविक उपयोग से पहले सहमति, भूमिका-आधारित पहुंच, अनाम विश्लेषण और ऑडिट ट्रेल आवश्यक हैं।',explain:'यह संकेतक क्यों?',recommendations:'कल्याण सिफारिशें',view:'विवरण देखें',noAlerts:'कोई नया कल्याण अलर्ट नहीं।',demo:'सिंथेटिक डेमो डेटा',signOut:'साइन आउट'}
 };
 
-function Card({children,className='' }:{children:React.ReactNode;className?:string}){return <section className={'rounded-2xl border bg-card p-5 shadow-sm '+className}>{children}</section>}
+function Card({children,className='' }:{children:ReactNode;className?:string}){return <section className={'rounded-2xl border bg-card p-5 shadow-sm '+className}>{children}</section>}
 function Badge({risk}:{risk:Risk}){return <span className={'rounded-full px-3 py-1 text-xs font-semibold '+(risk==='ELEVATED'?'bg-red-100 text-red-700':risk==='MODERATE'?'bg-amber-100 text-amber-700':'bg-emerald-100 text-emerald-700')}>{riskLabel(risk)}</span>}
 function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:any}){return <div className="rounded-xl border p-4"><Icon className="mb-2 h-5 w-5"/><div className="text-2xl font-bold">{value}</div><div className="text-sm text-muted-foreground">{label}</div></div>}
 
-function AppShell({lang,setLang,role,setRole,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:React.ReactNode}){
+function AppShell({lang,setLang,role,setRole,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:ReactNode}){
   const c=copy[lang]; const [open,setOpen]=useState(false); const [location]=useLocation();
   const links=[['/','home',Home],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]),['/alerts','alerts',Bell],['/motion','motion',Activity],['/privacy','privacy',LockKeyhole]];
   return <div className="min-h-screen bg-background text-foreground">
