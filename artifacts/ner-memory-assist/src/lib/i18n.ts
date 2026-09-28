@@ -27,12 +27,12 @@ export const languageOptions: { id: Lang; label: string; native: string; speechL
 
 export const copy = {
   en: {
-    appTitle: 'NER Memory Assist',
+    appTitle: 'NeuroFlex',
     region: 'North Eastern Region',
     welcome: 'A gentle moment, every day.',
     welcomeSub: 'Memory support made for you, your family, and your home.',
     chooseLanguage: 'Choose your language',
-    chooseRole: 'Who is using NER Memory Assist?',
+    chooseRole: 'Who is using NeuroFlex?',
     patient: 'For me',
     caregiver: 'For a family member',
     healthcare: 'For my care team',
@@ -76,11 +76,11 @@ export const copy = {
     chooseGame: 'Choose a gentle game',
     gameHint: 'A few minutes of play can be a lovely daily habit.',
     personalizedGames: 'Personalized Games',
-    culturalGames: 'NER Cultural Games',
+    culturalGames: 'NeuroFlex Cultural Games',
     personalizedJigsaw: 'Personalized Jigsaw',
     familyMatch: 'Family Member Match-It',
-    culturalJigsaw: 'NER Cultural Jigsaw',
-    culturalMatch: 'NER Cultural Match-It',
+    culturalJigsaw: 'NeuroFlex Cultural Jigsaw',
+    culturalMatch: 'NeuroFlex Cultural Match-It',
     rememberPlace: 'Remember the place',
     familyMatchHint: 'Find the familiar person, name, or relationship.',
     culturalMatchHint: 'Match a landmark, animal, object, food, or tradition.',
@@ -255,7 +255,7 @@ export const copy = {
     saveSchedule: 'Save schedule',
      online: 'Online',
      offlineDataSaved: 'Offline — data saved on this device',
-     installApp: 'Install NER Memory',
+     installApp: 'Install NeuroFlex',
      installAppHint: 'Keep the app on your phone or computer for quick offline access.',
      install: 'Install app',
      installInstructions: 'In your browser menu, choose “Install app” or “Add to Home screen” when available.',
@@ -269,7 +269,7 @@ export const copy = {
   ta: {
     appTitle: 'NER நினைவுதவி', region: 'வடகிழக்கு பகுதி', welcome: 'ஒவ்வொரு நாளும் ஒரு அமைதியான தருணம்.',
     welcomeSub: 'உங்களுக்கும் உங்கள் குடும்பத்திற்கும் நினைவு உதவி.', chooseLanguage: 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்',
-    chooseRole: 'NER Memory Assist யாருக்காக?', patient: 'எனக்காக', caregiver: 'குடும்ப உறுப்பினருக்காக',
+    chooseRole: 'NeuroFlex யாருக்காக?', patient: 'எனக்காக', caregiver: 'குடும்ப உறுப்பினருக்காக',
     healthcare: 'என் பராமரிப்பு குழுவுக்காக', continue: 'தொடரவும்', home: 'முகப்பு', games: 'விளையாட்டுகள்',
     medicine: 'மருந்து', music: 'இசை', memories: 'நினைவுகள்', progress: 'முன்னேற்றம்', settings: 'அமைப்புகள்',
     caregiverView: 'பராமரிப்பாளர் பார்வை', healthcareView: 'சுகாதார பார்வை', listening: 'கேட்கிறது…',
@@ -304,7 +304,7 @@ export const copy = {
   hi: {
     appTitle: 'NER स्मृति सहायक', region: 'उत्तर पूर्वी क्षेत्र', welcome: 'हर दिन, एक सुकून भरा पल।',
     welcomeSub: 'आपके और आपके परिवार के लिए स्मृति सहायता।', chooseLanguage: 'अपनी भाषा चुनें',
-    chooseRole: 'NER Memory Assist कौन उपयोग कर रहा है?', patient: 'मेरे लिए', caregiver: 'परिवार के सदस्य के लिए',
+    chooseRole: 'NeuroFlex कौन उपयोग कर रहा है?', patient: 'मेरे लिए', caregiver: 'परिवार के सदस्य के लिए',
     healthcare: 'मेरी देखभाल टीम के लिए', continue: 'आगे बढ़ें', home: 'होम', games: 'खेल', medicine: 'दवा',
     music: 'संगीत', memories: 'यादें', progress: 'प्रगति', settings: 'सेटिंग्स',
     caregiverView: 'देखभालकर्ता दृश्य', healthcareView: 'स्वास्थ्य दृश्य', listening: 'सुन रहा है…',
@@ -334,7 +334,7 @@ export const copy = {
   as: {
     appTitle: 'NER স্মৃতি সহায়', region: 'উত্তৰ পূৰ্বাঞ্চল', welcome: 'প্ৰতিদিনে এটা শান্ত মুহূৰ্ত।',
     welcomeSub: 'আপোনাৰ আৰু আপোনাৰ পৰিয়ালৰ বাবে স্মৃতি সহায়।', chooseLanguage: 'আপোনাৰ ভাষা বাছক',
-    chooseRole: 'NER Memory Assist কোনে ব্যৱহাৰ কৰিছে?', patient: 'মোৰ বাবে', caregiver: 'পৰিয়ালৰ সদস্যৰ বাবে',
+    chooseRole: 'NeuroFlex কোনে ব্যৱহাৰ কৰিছে?', patient: 'মোৰ বাবে', caregiver: 'পৰিয়ালৰ সদস্যৰ বাবে',
     healthcare: 'মোৰ যত্ন দলৰ বাবে', continue: 'আগবাঢ়ক', home: 'ঘৰ', games: 'খেল', medicine: 'ঔষধ',
     music: 'সংগীত', memories: 'স্মৃতি', progress: 'অগ্ৰগতি', settings: 'ছেটিংছ',
     caregiverView: 'যত্ন লোৱা ব্যক্তিৰ দৃষ্টি', healthcareView: 'স্বাস্থ্য দৃষ্টি', listening: 'শুনি আছে…',
@@ -363,7 +363,7 @@ export const copy = {
   bn: {
     appTitle: 'NER স্মৃতি সহায়ক', region: 'উত্তর পূর্বাঞ্চল', welcome: 'প্রতিদিন একটি শান্ত মুহূর্ত।',
     welcomeSub: 'আপনার ও পরিবারের জন্য স্মৃতি সহায়তা।', chooseLanguage: 'আপনার ভাষা বেছে নিন',
-    chooseRole: 'কে NER Memory Assist ব্যবহার করছেন?', patient: 'আমার জন্য', caregiver: 'পরিবারের সদস্যের জন্য',
+    chooseRole: 'কে NeuroFlex ব্যবহার করছেন?', patient: 'আমার জন্য', caregiver: 'পরিবারের সদস্যের জন্য',
     healthcare: 'আমার পরিচর্যা দলের জন্য', continue: 'এগিয়ে যান', home: 'হোম', games: 'খেলা', medicine: 'ওষুধ',
     music: 'সঙ্গীত', memories: 'স্মৃতি', progress: 'অগ্রগতি', settings: 'সেটিংস', caregiverView: 'পরিচর্যাকারীর দৃশ্য',
     healthcareView: 'স্বাস্থ্য দৃশ্য', listening: 'শুনছি…', micUnavailable: 'এই ব্রাউজারে বক্তৃতা শনাক্তকরণ নেই।',
@@ -391,7 +391,7 @@ export const copy = {
   brx: {
     appTitle: 'NER मोनसे जादों', region: 'उत्तर फिनि आंचल', welcome: 'सानफ्रुम दाउ फेसे।',
     welcomeSub: 'नोंनि आरो नोंनि फिसाफोरनि जाथाय मोनसे जादों।', chooseLanguage: 'नोंनि राव सायख’',
-    chooseRole: 'NER Memory Assist सोर बाहायो?', patient: 'आंनि थाखाय', caregiver: 'फिसाफोरनि थाखाय',
+    chooseRole: 'NeuroFlex सोर बाहायो?', patient: 'आंनि थाखाय', caregiver: 'फिसाफोरनि थाखाय',
     healthcare: 'साहाय्य दलनि थाखाय', continue: 'जाथाव', home: 'नाव', games: 'खेल', medicine: 'दावाइ',
     music: 'सुर', memories: 'मोनसे', progress: 'जौगानाय', settings: 'सेटिंग', listening: 'खोनासिनो…',
     micUnavailable: 'बे ब्राउजरआव राव सिनायथि गैया।', offline: 'अफलाइनआव खामानि खालामो',
@@ -418,7 +418,7 @@ export const copy = {
   mni: {
     appTitle: 'NER মপুং সহায়', region: 'উত্তর-পূর্ব অঞ্চল', welcome: 'নুংশি নুংশি নুংশি।',
     welcomeSub: 'নখোয়গী অমসুং নখোয়গী ইমুংগী মপুং সহায়।', chooseLanguage: 'নখোয়গী লোন শান্নবা',
-    chooseRole: 'NER Memory Assist কনাই বাহায়রি?', patient: 'এগী থাজবা', caregiver: 'ইমুংগী মী থাজবা',
+    chooseRole: 'NeuroFlex কনাই বাহায়রি?', patient: 'এগী থাজবা', caregiver: 'ইমুংগী মী থাজবা',
     healthcare: 'এগী যত্ন দলগী', continue: 'মখা চত্থরো', home: 'ইমুং', games: 'খেল', medicine: 'ওষুধ',
     music: 'মরুওই', memories: 'মপুং', progress: 'হৌদোকপা', settings: 'সেটিং', listening: 'তাক্নবা…',
     micUnavailable: 'মসিগী ব্রাউজরদা ৱাক্ চিনাক্ত নত্তে।', offline: 'অফলাইনদা থৌদোক',
@@ -443,9 +443,9 @@ export const copy = {
     memoriesEmpty: 'নখোয়গী মপুংগী তাক অদু থাজবা কাহানিগী থাজরি।', open: 'হাংবা',
   },
   kha: {
-    appTitle: 'NER Memory Assist', region: 'Ka thaiñ lam Mihngi', welcome: 'Ka sngi baroh, ka por kaba jai jai.',
+    appTitle: 'NeuroFlex', region: 'Ka thaiñ lam Mihngi', welcome: 'Ka sngi baroh, ka por kaba jai jai.',
     welcomeSub: 'Ka jingiarap kynmaw na ka bynta jong phi bad ka iing.', chooseLanguage: 'Jied ïa ka ktien jong phi',
-    chooseRole: 'Uei u pyndonkam ïa NER Memory Assist?', patient: 'Na bynta jong nga', caregiver: 'Na bynta u dkhot iing',
+    chooseRole: 'Uei u pyndonkam ïa NeuroFlex?', patient: 'Na bynta jong nga', caregiver: 'Na bynta u dkhot iing',
     healthcare: 'Na bynta ka kynhun sumar', continue: 'Bteng', home: 'Ing', games: 'Ki jingïalehkai',
     medicine: 'Dawai', music: 'Ka jingrwai', memories: 'Ki jingkynmaw', progress: 'Ka jingiaid shaphrang',
     settings: 'Ki setting', caregiverView: 'Ka jingpeit sumar', healthcareView: 'Ka jingpeit koit',
@@ -475,7 +475,7 @@ export const copy = {
   lus: {
     appTitle: 'NER Hriat Reng', region: 'North Eastern Region', welcome: 'Ni tinah, hun leh mu zawng.',
     welcomeSub: 'I hriat reng tur te, i chhungkaw leh i in tan.', chooseLanguage: 'I tawng thlan rawh',
-    chooseRole: 'Tu nge NER Memory Assist hi hmang?', patient: 'Kei tan', caregiver: 'Chhungkaw mi tan',
+    chooseRole: 'Tu nge NeuroFlex hi hmang?', patient: 'Kei tan', caregiver: 'Chhungkaw mi tan',
     healthcare: 'Ka enkawlna team tan', continue: 'Kal zel rawh', home: 'In', games: 'Infiamna',
     medicine: 'Damdawi', music: 'Hla', memories: 'Hriat rengte', progress: 'Hma sawnna', settings: 'Settings',
     caregiverView: 'Enkawltu view', healthcareView: 'Health view', listening: 'Ngaihthlak mek…',
@@ -503,7 +503,7 @@ export const copy = {
   ne: {
     appTitle: 'NER स्मृति सहयोग', region: 'उत्तर पूर्वी क्षेत्र', welcome: 'हरेक दिन, शान्त क्षण।',
     welcomeSub: 'तपाईं र परिवारका लागि स्मृति सहयोग।', chooseLanguage: 'आफ्नो भाषा छान्नुहोस्',
-    chooseRole: 'NER Memory Assist कसले प्रयोग गर्दैछ?', patient: 'मेरो लागि', caregiver: 'परिवारका लागि',
+    chooseRole: 'NeuroFlex कसले प्रयोग गर्दैछ?', patient: 'मेरो लागि', caregiver: 'परिवारका लागि',
     healthcare: 'हेरचाह टोलीका लागि', continue: 'अगाडि बढ्नुहोस्', home: 'गृह', games: 'खेल', medicine: 'औषधि',
     music: 'सङ्गीत', memories: 'सम्झना', progress: 'प्रगति', settings: 'सेटिङहरू',
     caregiverView: 'हेरचाह दृश्य', healthcareView: 'स्वास्थ्य दृश्य', listening: 'सुन्दै…',
