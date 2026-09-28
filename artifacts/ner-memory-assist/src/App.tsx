@@ -363,7 +363,7 @@ function AppFrame({ children, lang, role }: { children: ReactNode; lang: Lang; r
       <aside className={`fixed inset-y-0 left-0 z-30 flex h-[100dvh] w-[min(86vw,18rem)] flex-col overflow-hidden bg-[hsl(var(--sidebar))] p-5 text-[hsl(var(--sidebar-foreground))] transition-transform md:translate-x-0 md:w-72 ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-8 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26} /></div>
-          <div><p className="serif text-xl">NER</p><p className="text-xs tracking-[.18em] opacity-70">MEMORY ASSIST</p></div>
+          <div><p className="serif text-xl">NeuroFlex</p></div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
         <nav className="space-y-2">
@@ -418,7 +418,7 @@ function Welcome({ lang, role, setLang, setRole }: { lang: Lang; role: Role; set
       <div className="mx-auto grid min-h-[calc(100dvh-2rem)] max-w-6xl overflow-hidden rounded-[2rem] card-surface md:grid-cols-[.9fr_1.1fr]">
         <section className="relative flex flex-col justify-between overflow-hidden bg-[hsl(var(--sidebar))] p-7 text-[hsl(var(--sidebar-foreground))] md:p-12">
           <div className="absolute -right-16 -top-10 h-64 w-64 rounded-full border-[34px] border-[hsl(var(--accent)/.4)]" />
-          <div className="relative"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26} /></div><span className="tracking-[.2em]">NER</span></div>
+          <div className="relative"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--accent))]"><Flower2 size={26} /></div><span className="tracking-[.12em]">NeuroFlex</span></div>
             <div className="mt-24 max-w-sm"><p className="mb-4 text-sm uppercase tracking-[.2em] opacity-65">{translate('region')}</p><h1 className="serif text-5xl leading-[1.05] md:text-6xl">{translate('welcome')}</h1><p className="mt-6 text-lg leading-relaxed opacity-80">{translate('welcomeSub')}</p></div>
           </div>
           <div className="relative mt-12 flex items-end gap-3"><div className="h-20 w-20 rounded-t-full bg-[hsl(var(--secondary)/.7)]" /><div className="h-28 w-28 rounded-t-full bg-[hsl(var(--accent)/.75)]" /><div className="h-16 w-16 rounded-t-full bg-[hsl(var(--secondary)/.5)]" /></div>
