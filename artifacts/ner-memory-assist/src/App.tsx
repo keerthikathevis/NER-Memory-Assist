@@ -57,7 +57,7 @@ function Card({children,className='' }:{children:ReactNode;className?:string}){r
 function Badge({risk}:{risk:Risk}){return <span className={'rounded-full px-3 py-1 text-xs font-semibold '+(risk==='ELEVATED'?'bg-red-100 text-red-700':risk==='MODERATE'?'bg-amber-100 text-amber-700':'bg-emerald-100 text-emerald-700')}>{riskLabel(risk)}</span>}
 function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:any}){return <div className="rounded-xl border p-4"><Icon className="mb-2 h-5 w-5"/><div className="text-2xl font-bold">{value}</div><div className="text-sm text-muted-foreground">{label}</div></div>}
 
-function Login({onLogin}:{onLogin:(role:Role,email:string)=>void}) { const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const accounts:Record<string,Role>={'personnel@demo.neuroflex.app':'personnel','clinician@demo.neuroflex.app':'clinician','welfare@demo.neuroflex.app':'welfare','commander@demo.neuroflex.app':'commander','admin@demo.neuroflex.app':'admin'}; const submit=(e:React.FormEvent)=>{e.preventDefault();const key=email.trim().toLowerCase();if(!accounts[key]||password!=='Demo@12345'){setError('Use a listed demo account and the demo password.');return;}onLogin(accounts[key],key)}; return <div className="min-h-screen bg-background px-4 py-10"><div className="mx-auto max-w-md"><Card><h1 className="text-2xl font-bold">NeuroFlex</h1><p className="mt-1 text-sm text-muted-foreground">Personnel Stress & Welfare Support</p><form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm">Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label><label className="block text-sm">Password<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label>{error&&<p className="text-sm text-red-600">{error}</p>}<button className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">Sign in</button></form><p className="mt-4 text-xs text-muted-foreground">Prototype login. Demo password: Demo@12345. Production must use server-side authentication, secure password hashing, verified email, secure session cookies and MFA for privileged roles.</p></Card></div></div>; }\n\nfunction AppShell({lang,setLang,role,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;setRole:(r:Role)=>void;children:ReactNode}){
+function Login({onLogin}:{onLogin:(role:Role,email:string)=>void}) { const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const accounts:Record<string,Role>={'personnel@demo.neuroflex.app':'personnel','clinician@demo.neuroflex.app':'clinician','welfare@demo.neuroflex.app':'welfare','commander@demo.neuroflex.app':'commander','admin@demo.neuroflex.app':'admin'}; const submit=(e:React.FormEvent)=>{e.preventDefault();const key=email.trim().toLowerCase();if(!accounts[key]||password!=='Demo@12345'){setError('Use a listed demo account and the demo password.');return;}onLogin(accounts[key],key)}; return <div className="min-h-screen bg-background px-4 py-10"><div className="mx-auto max-w-md"><Card><h1 className="text-2xl font-bold">NeuroFlex</h1><p className="mt-1 text-sm text-muted-foreground">Personnel Stress & Welfare Support</p><form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm">Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label><label className="block text-sm">Password<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"/></label>{error&&<p className="text-sm text-red-600">{error}</p>}<button className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">Sign in</button></form><p className="mt-4 text-xs text-muted-foreground">Prototype login. Demo password: Demo@12345. Production must use server-side authentication, secure password hashing, verified email, secure session cookies and MFA for privileged roles.</p></Card></div></div>; }\n\nfunction AppShell({lang,setLang,role,email,children}:{lang:Lang;setLang:(l:Lang)=>void;role:Role;email:string;children:ReactNode}){
   const c=copy[lang]; const [open,setOpen]=useState(false); const [location]=useLocation();
   const links=[['/','home',Home],['/profile','profile',UserRound],['/health-assessment','assessment',ClipboardCheck],['/check-in','check',ClipboardCheck],['/trends','trends',BarChart3],['/workload','workload',CalendarDays], ...(role!=='personnel'?[['/welfare','welfare',Users]]:[]), ...(role==='clinician'?[['/clinician','clinician',HeartPulse]]:[]),['/alerts','alerts',Bell],['/counselling','counselling',HeartPulse],['/privacy','privacy',LockKeyhole]];
   return <div className="min-h-screen bg-background text-foreground">
@@ -612,20 +612,13 @@ function App() {
       lang={lang}
       setLang={setLang}
       role={role}
+      email={email}
     >
       <Switch>
-        <Route path="/profile">
-          <Profile lang={lang} personnel={personnel} setPersonnel={setPersonnel} />
-        </Route>
-        <Route path="/health-assessment">\n          <HealthAssessment personnel={personnel} />\n        </Route>\n        <Route path="/check-in">
-          <CheckIn lang={lang} setPersonnel={setPersonnel} />
-        </Route>
-        <Route path="/trends">
-          <Trends personnel={personnel} />
-        </Route>
-        <Route path="/workload">
-          <Workload personnel={personnel} />
-        </Route>
+        <Route path="/profile"><Protected allowed={["personnel"]} role={role}><Profile lang={lang} personnel={personnel} setPersonnel={setPersonnel} /></Protected></Route>
+        <Route path="/health-assessment"><Protected allowed={["personnel","clinician"]} role={role}><HealthAssessment personnel={personnel} /></Protected></Route><Route path="/check-in"><Protected allowed={["personnel"]} role={role}><CheckIn lang={lang} setPersonnel={setPersonnel} /></Protected></Route>
+        <Route path="/trends"><Protected allowed={["personnel"]} role={role}><Trends personnel={personnel} /></Protected></Route>
+        <Route path="/workload"><Protected allowed={["personnel","welfare","commander"]} role={role}><Workload personnel={personnel} /></Protected></Route>
         <Route path="/clinician">
           <Protected allowed={['clinician']} role={role}>
             <ClinicianDashboard personnel={personnel} />
@@ -641,9 +634,7 @@ function App() {
             <Alerts personnel={personnel} />
           </Protected>
         </Route>
-        <Route path="/counselling">
-          <Counselling />
-        </Route>
+        <Route path="/counselling"><Protected allowed={["personnel","clinician"]} role={role}><Counselling /></Protected></Route>
         <Route path="/privacy">
           <Privacy c={c} />
         </Route>
