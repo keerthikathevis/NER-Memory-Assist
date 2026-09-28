@@ -329,19 +329,49 @@ function Counselling() {
 
 function Protected({allowed,role,children}:{allowed:Role[];role:Role;children:ReactNode}){return allowed.includes(role)?<>{children}</>:<Card><h1 className="text-xl font-bold">Authorized role required</h1><p className="mt-2 text-sm text-muted-foreground">This welfare information is restricted to authorized roles.</p></Card>}
 function App() {
-  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('nf-lang') as Lang) || 'en');
-  const [role, setRole] = useState<Role>(() => (localStorage.getItem('nf-role') as Role) || 'personnel');
-  const [personnel, setPersonnel] = useState<Personnel[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('nf-personnel') || 'null') || seedPersonnel;
-    } catch {
-      return seedPersonnel;
-    }
-  });
+  const [lang, setLang] = useState<Lang>('en');
+  const [role, setRole] = useState<Role>('personnel');
+  const [personnel, setPersonnel] = useState<Personnel[]>(seedPersonnel);
 
-  useEffect(() => localStorage.setItem('nf-lang', lang), [lang]);
-  useEffect(() => localStorage.setItem('nf-role', role), [role]);
-  useEffect(() => localStorage.setItem('nf-personnel', JSON.stringify(personnel)), [personnel]);
+  useEffect(() => {
+    const savedLang = localStorage.getItem('nf-lang');
+    const savedRole = localStorage.getItem('nf-role');
+    const savedPersonnel = localStorage.getItem('nf-personnel');
+
+    if (savedLang === 'en' || savedLang === 'ta' || savedLang === 'hi') {
+      setLang(savedLang);
+    }
+    if (
+      savedRole === 'personnel' ||
+      savedRole === 'welfare' ||
+      savedRole === 'commander' ||
+      savedRole === 'admin'
+    ) {
+      setRole(savedRole);
+    }
+    if (savedPersonnel) {
+      try {
+        const parsed = JSON.parse(savedPersonnel) as Personnel[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPersonnel(parsed);
+        }
+      } catch {
+        // Keep synthetic seed data if stored data is invalid.
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nf-lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem('nf-role', role);
+  }, [role]);
+
+  useEffect(() => {
+    localStorage.setItem('nf-personnel', JSON.stringify(personnel));
+  }, [personnel]);
 
   const c = copy[lang];
 
