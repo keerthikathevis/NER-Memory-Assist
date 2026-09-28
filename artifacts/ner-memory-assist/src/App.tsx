@@ -106,21 +106,225 @@ function Workload({personnel}:{personnel:Personnel[]}){return <div className="sp
 function Welfare({personnel}:{personnel:Personnel[]}){const elevated=personnel.filter(p=>riskOf(p)==='ELEVATED'), moderate=personnel.filter(p=>riskOf(p)==='MODERATE'); return <div className="space-y-5"><div><h1 className="text-2xl font-bold">Welfare Officer Dashboard</h1><p className="text-sm text-muted-foreground">Use indicators to prioritize confidential human review; do not automate disciplinary decisions.</p></div><div className="grid gap-4 sm:grid-cols-3"><Metric label="Lower" value={personnel.length-elevated.length-moderate.length} icon={CheckCircle2}/><Metric label="Moderate" value={moderate.length} icon={AlertTriangle}/><Metric label="Elevated" value={elevated.length} icon={ShieldCheck}/></div><Card><div className="space-y-3">{personnel.map(p=><div key={p.id} className="flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between"><div><div className="font-semibold">{p.id} · {p.rank}</div><div className="text-sm text-muted-foreground">{p.unit} · workload {p.wellness.workload}/5 · fatigue {p.wellness.fatigue}/5</div></div><div className="flex items-center gap-3"><Badge risk={riskOf(p)}/><span className="text-sm">{riskScore(p)} indicator score</span></div></div>)}</div></Card></div>}
 function Alerts({personnel}:{personnel:Personnel[]}){const alerts=personnel.filter(p=>riskOf(p)!=='LOWER'); return <div className="space-y-5"><h1 className="text-2xl font-bold">Welfare Alerts</h1>{alerts.length?<div className="space-y-3">{alerts.map(p=><Card key={p.id}><div className="flex gap-3"><AlertTriangle className="h-5 w-5 shrink-0"/><div className="flex-1"><div className="flex flex-wrap items-center gap-2 font-semibold">{p.id}<Badge risk={riskOf(p)}/></div><p className="mt-2 text-sm text-muted-foreground">Pattern includes {p.dutyHours} duty hours/week, {p.restHours} hours rest/night and fatigue {p.wellness.fatigue}/5.</p><p className="mt-2 text-sm">Suggested action: confidential welfare review and workload/rest assessment.</p></div></div></Card>)}</div>:<Card>{copy.en.noAlerts}</Card>}</div>}
 function Privacy({c}:{c:any}){const [consent,setConsent]=useState(()=>localStorage.getItem('nf-consent')==='yes'); return <div className="space-y-5"><h1 className="text-2xl font-bold">{c.privacyTitle}</h1><Card><div className="grid gap-4 md:grid-cols-2"><Metric label="Consent" value="Required" icon={CheckCircle2}/><Metric label="Access" value="Role-based" icon={LockKeyhole}/><Metric label="Analytics" value="Prototype" icon={Database}/><Metric label="Audit" value="Enabled in prototype" icon={ShieldCheck}/></div><p className="mt-5 text-sm text-muted-foreground">{c.privacyBody}</p><label className="mt-5 flex items-start gap-3 rounded-xl border p-4"><input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);localStorage.setItem('nf-consent',e.target.checked?'yes':'no')}} className="mt-1"/><span className="text-sm"><b>Voluntary wellness consent</b><br/>Allow this prototype to store your wellness check-in on this device. Optional motion/biometric-style measurements remain separate and require an explicit start action.</span></label></Card><Card><h2 className="font-semibold">Data handling principles</h2><ul className="mt-3 list-disc space-y-2 pl-5 text-sm"><li>Collect only necessary welfare information.</li><li>Separate voluntary wellness data from organizational records.</li><li>Show individual details only to authorized roles.</li><li>Use synthetic/demo data during development and evaluation.</li><li>Keep human welfare review in the decision loop.</li></ul></Card></div>}
-function Counselling(){
-  const [clinician,setClinician]=useState('Dr. Ananya Rao');
-  const [slot,setSlot]=useState('Today, 4:30 PM');
-  const [booked,setBooked]=useState(()=>localStorage.getItem('nf-consultation')||'');
-  const [room,setRoom]=useState(false);
-  const [chat,setChat]=useState<string[]>([]);
-  const [msg,setMsg]=useState('');
-  const [stream,setStream]=useState<MediaStream|null>(null);
-  const join=async()=>{setRoom(true); try{const st=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); setStream(st); setTimeout(()=>{const v=document.getElementById('nf-local-video') as HTMLVideoElement|null; if(v){v.srcObject=st; v.play().catch(()=>{});}},50);}catch{}}
-  const leave=()=>{stream?.getTracks().forEach(t=>t.stop());setStream(null);setRoom(false)};
-  useEffect(()=>()=>{stream?.getTracks().forEach(t=>t.stop())},[stream]);
-  const book=()=>{const value=clinician+' · '+slot; setBooked(value); localStorage.setItem('nf-consultation',value)};
-  const send=()=>{if(!msg.trim())return;setChat(x=>[...x,'You: '+msg.trim()]);setMsg('');setTimeout(()=>setChat(x=>[...x,'Clinician: Thank you. We can discuss this during the consultation.']),300)};
-  if(room)return <div className="space-y-4"><div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Secure Consultation Room</h1><p className="text-sm text-muted-foreground">Demo clinician: {clinician} · Welfare support prototype</p></div><button onClick={leave} className="rounded-xl bg-red-600 px-4 py-2 text-white">End consultation</button></div><div className="grid gap-4 lg:grid-cols-3"><Card className="lg:col-span-2"><div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950"><div className="flex h-full items-center justify-center text-white"><div className="text-center"><HeartPulse className="mx-auto h-12 w-12"/><p className="mt-2 font-semibold">{clinician}</p><p className="text-sm text-slate-300">Clinician video placeholder</p></div></div><video id="nf-local-video" muted playsInline className="absolute bottom-4 right-4 h-32 w-48 rounded-xl border-2 border-white bg-black object-cover"/></div><div className="mt-4 flex flex-wrap gap-2"><button onClick={()=>stream?.getAudioTracks().forEach(t=>t.enabled=!t.enabled)} className="rounded-xl border px-4 py-2">🎤 Mute</button><button onClick={()=>stream?.getVideoTracks().forEach(t=>t.enabled=!t.enabled)} className="rounded-xl border px-4 py-2">📹 Camera</button><button className="rounded-xl border px-4 py-2">🔒 Private session</button></div></Card><Card><h2 className="font-semibold">Consultation chat</h2><div className="mt-3 h-64 overflow-y-auto rounded-xl bg-muted p-3 text-sm space-y-2">{chat.length?chat.map((m,i)=><p key={i}>{m}</p>):<p className="text-muted-foreground">Your consultation messages will appear here.</p>}</div><div className="mt-3 flex gap-2"><input value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Type a message..." className="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2"/><button onClick={send} className="rounded-xl bg-primary px-4 py-2 text-primary-foreground">Send</button></div></Card></div></div>;
-  return <div className="space-y-5"><div><p className="text-sm text-muted-foreground">Confidential welfare support</p><h1 className="text-2xl font-bold">Counselling & Teleconsultation</h1><p className="mt-1 text-muted-foreground">Request a demo consultation with a clinician and enter a browser-based consultation room.</p></div><div className="grid gap-5 lg:grid-cols-2"><Card><h2 className="text-lg font-semibold">Available clinicians</h2><div className="mt-4 space-y-3"><label className="block text-sm">Clinician<select value={clinician} onChange={e=>setClinician(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"><option>Dr. Ananya Rao</option><option>Dr. Rahul Menon</option><option>Ms. Priya Sharma — Counsellor</option></select></label><label className="block text-sm">Appointment<select value={slot} onChange={e=>setSlot(e.target.value)} className="mt-1 w-full rounded-xl border bg-background p-3"><option>Today, 4:30 PM</option><option>Today, 6:00 PM</option><option>Tomorrow, 10:00 AM</option></select></label><button onClick={book} className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">Request consultation</button>{booked&&<div className="mt-3 rounded-xl border p-3 text-sm"><b>Booked:</b> {booked}</div>}</Card><Card><h2 className="text-lg font-semibold">How support works</h2><ol className="mt-4 space-y-3 text-sm"><li>1. Choose a clinician and available time.</li><li>2. Join the consultation room when ready.</li><li>3. Allow camera/microphone access for the demo.</li><li>4. Use chat and video controls during the session.</li><li>5. Follow-up can be recorded in the production system by authorized professionals.</li></ol><button onClick={join} className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground">{booked?'Join consultation':'Open demo consultation room'}</button><p className="mt-3 text-xs text-muted-foreground">Demo clinician profiles are placeholders. This prototype does not provide medical diagnosis or replace qualified clinical care.</p></Card></div></div>
+function Counselling() {
+  const [clinician, setClinician] = useState('Dr. Ananya Rao');
+  const [slot, setSlot] = useState('Today, 4:30 PM');
+  const [booked, setBooked] = useState(() => localStorage.getItem('nf-consultation') || '');
+  const [room, setRoom] = useState(false);
+  const [chat, setChat] = useState<string[]>([]);
+  const [msg, setMsg] = useState('');
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  const join = async () => {
+    setRoom(true);
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setStream(st);
+    } catch {
+      // Camera/microphone access is optional for the prototype.
+    }
+  };
+
+  useEffect(() => {
+    if (!room || !stream) return;
+    const video = document.getElementById('nf-local-video') as HTMLVideoElement | null;
+    if (video) {
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
+    return () => {
+      stream.getTracks().forEach((track) => track.stop());
+    };
+  }, [room, stream]);
+
+  const leave = () => {
+    stream?.getTracks().forEach((track) => track.stop());
+    setStream(null);
+    setRoom(false);
+  };
+
+  const book = () => {
+    const value = clinician + ' · ' + slot;
+    setBooked(value);
+    localStorage.setItem('nf-consultation', value);
+  };
+
+  const send = () => {
+    const trimmed = msg.trim();
+    if (!trimmed) return;
+    setChat((items) => [...items, 'You: ' + trimmed]);
+    setMsg('');
+    setTimeout(() => {
+      setChat((items) => [
+        ...items,
+        'Clinician: Thank you. We can discuss this during the consultation.'
+      ]);
+    }, 300);
+  };
+
+  if (room) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Secure Consultation Room</h1>
+            <p className="text-sm text-muted-foreground">
+              Demo clinician: {clinician} · Welfare support prototype
+            </p>
+          </div>
+          <button onClick={leave} className="rounded-xl bg-red-600 px-4 py-2 text-white">
+            End consultation
+          </button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950">
+              <div className="flex h-full items-center justify-center text-white">
+                <div className="text-center">
+                  <HeartPulse className="mx-auto h-12 w-12" />
+                  <p className="mt-2 font-semibold">{clinician}</p>
+                  <p className="text-sm text-slate-300">Clinician video placeholder</p>
+                </div>
+              </div>
+              <video
+                id="nf-local-video"
+                muted
+                playsInline
+                className="absolute bottom-4 right-4 h-32 w-48 rounded-xl border-2 border-white bg-black object-cover"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => stream?.getAudioTracks().forEach((track) => { track.enabled = !track.enabled; })}
+                className="rounded-xl border px-4 py-2"
+              >
+                🎤 Mute
+              </button>
+              <button
+                onClick={() => stream?.getVideoTracks().forEach((track) => { track.enabled = !track.enabled; })}
+                className="rounded-xl border px-4 py-2"
+              >
+                📹 Camera
+              </button>
+              <button className="rounded-xl border px-4 py-2">🔒 Private session</button>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="font-semibold">Consultation chat</h2>
+            <div className="mt-3 h-64 space-y-2 overflow-y-auto rounded-xl bg-muted p-3 text-sm">
+              {chat.length ? (
+                chat.map((item, index) => <p key={index}>{item}</p>)
+              ) : (
+                <p className="text-muted-foreground">
+                  Your consultation messages will appear here.
+                </p>
+              )}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input
+                value={msg}
+                onChange={(event) => setMsg(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') send();
+                }}
+                placeholder="Type a message..."
+                className="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2"
+              />
+              <button
+                onClick={send}
+                className="rounded-xl bg-primary px-4 py-2 text-primary-foreground"
+              >
+                Send
+              </button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <p className="text-sm text-muted-foreground">Confidential welfare support</p>
+        <h1 className="text-2xl font-bold">Counselling & Teleconsultation</h1>
+        <p className="mt-1 text-muted-foreground">
+          Request a demo consultation with a clinician and enter a browser-based consultation room.
+        </p>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <h2 className="text-lg font-semibold">Available clinicians</h2>
+          <div className="mt-4 space-y-3">
+            <label className="block text-sm">
+              Clinician
+              <select
+                value={clinician}
+                onChange={(event) => setClinician(event.target.value)}
+                className="mt-1 w-full rounded-xl border bg-background p-3"
+              >
+                <option>Dr. Ananya Rao</option>
+                <option>Dr. Rahul Menon</option>
+                <option>Ms. Priya Sharma — Counsellor</option>
+              </select>
+            </label>
+
+            <label className="block text-sm">
+              Appointment
+              <select
+                value={slot}
+                onChange={(event) => setSlot(event.target.value)}
+                className="mt-1 w-full rounded-xl border bg-background p-3"
+              >
+                <option>Today, 4:30 PM</option>
+                <option>Today, 6:00 PM</option>
+                <option>Tomorrow, 10:00 AM</option>
+              </select>
+            </label>
+
+            <button
+              onClick={book}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground"
+            >
+              Request consultation
+            </button>
+
+            {booked && (
+              <div className="mt-3 rounded-xl border p-3 text-sm">
+                <b>Booked:</b> {booked}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="text-lg font-semibold">How support works</h2>
+          <ol className="mt-4 space-y-3 text-sm">
+            <li>1. Choose a clinician and available time.</li>
+            <li>2. Join the consultation room when ready.</li>
+            <li>3. Allow camera/microphone access for the demo.</li>
+            <li>4. Use chat and video controls during the session.</li>
+            <li>5. Follow-up can be recorded in the production system by authorized professionals.</li>
+          </ol>
+
+          <button
+            onClick={join}
+            className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground"
+          >
+            {booked ? 'Join consultation' : 'Open demo consultation room'}
+          </button>
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            Demo clinician profiles are placeholders. This prototype does not provide medical diagnosis or replace qualified clinical care.
+          </p>
+        </Card>
+      </div>
+    </div>
+  );
 }
 
 function Protected({allowed,role,children}:{allowed:Role[];role:Role;children:ReactNode}){return allowed.includes(role)?<>{children}</>:<Card><h1 className="text-xl font-bold">Authorized role required</h1><p className="mt-2 text-sm text-muted-foreground">This welfare information is restricted to authorized roles.</p></Card>}
