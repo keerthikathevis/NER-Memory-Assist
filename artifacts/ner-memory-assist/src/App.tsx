@@ -12,6 +12,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { adaptDifficulty, scoreGame, type Difficulty, type GameResult } from '@/lib/adaptive-engine';
+import { culturalItems, type CulturalItem } from '@/lib/game-data';
 import { languageOptions, resolveVoiceCommand, t, type CopyKey, type Lang, type Role } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
 import { getOfflineVoiceCapability, ensureOfflineVoiceLanguage } from '@/lib/offline-voice';
