@@ -189,6 +189,18 @@ function Login({onLogin}:{onLogin:(role:Role,email:string,username:string)=>void
         <div className="mt-5 rounded-xl border p-3 text-xs text-muted-foreground">
           <b>Access control:</b> new accounts are created as Personnel. Clinician, Welfare Officer, Commander and Administrator access must be assigned by an authorized administrator after verification.
         </div>
+
+        <div className="mt-4 rounded-xl border bg-muted/30 p-4">
+          <p className="text-sm font-semibold">Prototype role access</p>
+          <p className="mt-1 text-xs text-muted-foreground">Use these buttons to demonstrate each authorized interface during a presentation. These demo identities are not production accounts.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" onClick={()=>onLogin('personnel','personnel@demo.neuroflex.app','Demo Personnel')} className="rounded-lg border px-3 py-2 text-xs">Personnel</button>
+            <button type="button" onClick={()=>onLogin('clinician','clinician@demo.neuroflex.app','Demo Clinician')} className="rounded-lg border px-3 py-2 text-xs">Clinician</button>
+            <button type="button" onClick={()=>onLogin('welfare','welfare@demo.neuroflex.app','Demo Welfare Officer')} className="rounded-lg border px-3 py-2 text-xs">Welfare Officer</button>
+            <button type="button" onClick={()=>onLogin('commander','commander@demo.neuroflex.app','Demo Commander')} className="rounded-lg border px-3 py-2 text-xs">Commander</button>
+            <button type="button" onClick={()=>onLogin('admin','admin@demo.neuroflex.app','Demo Administrator')} className="col-span-2 rounded-lg border px-3 py-2 text-xs">Administrator</button>
+          </div>
+        </div>
         <p className="mt-3 text-xs text-muted-foreground">
           Prototype authentication stores account data locally in this browser. Production must use a secure backend, password hashing, verified email, secure session cookies, MFA and server-side role authorization.
         </p>
@@ -809,6 +821,11 @@ function App() {
         <Route path="/clinician">
           <Protected allowed={['clinician']} role={role}>
             <ClinicianDashboard personnel={personnel} />
+          </Protected>
+        </Route>
+        <Route path="/credentials">
+          <Protected allowed={['clinician','welfare','admin']} role={role}>
+            <CredentialVerification role={role} />
           </Protected>
         </Route>
         <Route path="/welfare">
