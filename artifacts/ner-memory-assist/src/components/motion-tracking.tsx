@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Activity, Camera, CameraOff, RotateCcw, ShieldCheck } from 'lucide-react';
 
 type Point = { x: number; y: number; z?: number; visibility?: number };
@@ -25,7 +25,7 @@ const angle = (a: Point, b: Point, c: Point) => {
 };
 
 
-function SectionCard({ className = '', children }: { className?: string; children: React.ReactNode }) {
+function SectionCard({ className = '', children }: { className?: string; children: ReactNode }) {
   return <section className={`rounded-3xl border bg-[hsl(var(--card))] p-5 shadow-sm ${className}`}>{children}</section>;
 }
 
