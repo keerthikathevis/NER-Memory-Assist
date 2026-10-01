@@ -62,7 +62,6 @@ type Account = {
   email: string;
   password: string;
   role: Role;
-  verified: boolean;
 };
 
 function loadAccounts(): Account[] {
@@ -125,8 +124,7 @@ function Login({onLogin}:{onLogin:(role:Role,email:string,username:string)=>void
         username:cleanUsername,
         email:cleanEmail,
         password,
-        role:'personnel',
-        verified:false
+        role:'personnel'
       };
       saveAccounts([...accounts,account]);
       setMessage('Account created. You can now sign in with your email and password.');
@@ -187,7 +185,7 @@ function Login({onLogin}:{onLogin:(role:Role,email:string,username:string)=>void
         </form>
 
         <div className="mt-5 rounded-xl border p-3 text-xs text-muted-foreground">
-          <b>Access control:</b> new accounts are created as Personnel. Clinician, Welfare Officer, Commander and Administrator access must be assigned by an authorized administrator after verification.
+          <b>Access control:</b> new accounts are created as Personnel. Clinician, Welfare Officer, Commander and Administrator access must be assigned by an authorized administrator.
         </div>
 
         <div className="mt-4 rounded-xl border bg-muted/30 p-4">
@@ -202,7 +200,7 @@ function Login({onLogin}:{onLogin:(role:Role,email:string,username:string)=>void
           </div>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Prototype authentication stores account data locally in this browser. Production must use a secure backend, password hashing, verified email, secure session cookies, MFA and server-side role authorization.
+          Prototype authentication stores account data locally in this browser. Production must use a secure backend, password hashing, secure session cookies, MFA and server-side role authorization.
         </p>
       </Card>
     </div>
