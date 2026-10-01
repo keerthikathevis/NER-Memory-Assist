@@ -177,6 +177,18 @@ function HomePage({c,personnel}:{c:any;personnel:Personnel[]}){
         <b>Suggested next step:</b> {risk==='ELEVATED'?'Confidential welfare review and workload/rest assessment.':risk==='MODERATE'?'Continue check-ins and consider a confidential welfare review if the pattern persists.':'Continue routine wellness check-ins and healthy work/rest practices.'}
       </div>
     </Card>
+    <Card>
+      <div className="flex items-center gap-2 font-semibold"><Brain className="h-5 w-5"/>Predictive Model Validation</div>
+      <p className="mt-1 text-sm text-muted-foreground">Development model validated on 2,000 synthetic prototype records.</p>
+      <div className="mt-4 grid gap-3 grid-cols-2 md:grid-cols-5">
+        <Metric label="Accuracy" value={Math.round(MODEL_VALIDATION.accuracy*100)+'%'} icon={CheckCircle2}/>
+        <Metric label="Precision" value={Math.round(MODEL_VALIDATION.precision*100)+'%'} icon={ShieldCheck}/>
+        <Metric label="Recall" value={Math.round(MODEL_VALIDATION.recall*100)+'%'} icon={Activity}/>
+        <Metric label="F1" value={Math.round(MODEL_VALIDATION.f1*100)+'%'} icon={BarChart3}/>
+        <Metric label="ROC-AUC" value={MODEL_VALIDATION.rocAuc.toFixed(3)} icon={Brain}/>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">5-fold CV ROC-AUC: {MODEL_VALIDATION.fiveFoldCvRocAuc.toFixed(3)} ± {MODEL_VALIDATION.fiveFoldCvStd.toFixed(3)}. Synthetic development evidence; production validation requires governed representative institutional data.</p>
+    </Card>
     <div className="grid gap-5 lg:grid-cols-3"><Card className="lg:col-span-2"><div className="flex items-center justify-between"><div><h2 className="text-lg font-semibold">{c.myStatus}</h2><p className="text-sm text-muted-foreground">Synthetic personnel profile: {me.id}</p></div><Badge risk={risk}/></div><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label={c.stress} value={me.wellness.stress+'/5'} icon={Brain}/><Metric label={c.sleep} value={me.wellness.sleep+'/5'} icon={Moon}/><Metric label={c.fatigue} value={me.wellness.fatigue+'/5'} icon={Activity}/><Metric label={c.workloadScore} value={me.wellness.workload+'/5'} icon={BarChart3}/></div></Card>
     <Card><h2 className="font-semibold">{c.recommendations}</h2><ul className="mt-3 space-y-3 text-sm">{recommendations(me).map(x=><li key={x} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0"/>{x}</li>)}</ul></Card></div>
     <Card><div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-5 w-5"/>{c.consent}</div><p className="mt-2 text-sm text-muted-foreground">{c.consentText}</p></Card>
