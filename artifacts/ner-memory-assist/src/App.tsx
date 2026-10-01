@@ -5,6 +5,7 @@ import {
   Users, X, LogOut, Settings, ChevronRight, Brain, CalendarDays, Dumbbell, Database,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router } from 'wouter';
+import { predictiveRiskScore, MODEL_VALIDATION } from './lib/welfare-model';
 
 type Lang = 'en' | 'ta' | 'hi';
 type Role = 'personnel' | 'clinician' | 'welfare' | 'commander' | 'admin';
@@ -32,14 +33,12 @@ const seedPersonnel: Personnel[] = [
 ];
 
 function riskScore(p: Personnel) {
-  const w=p.wellness;
-  return Math.round(
-    Math.min(100,
-      p.dutyHours*0.45 + p.deploymentDays*0.22 + p.leaveGap*0.18 +
-      p.trainingLoad*0.08 + Math.max(0,8-p.restHours)*6 +
-      (w.stress+w.fatigue+w.workload+(6-w.sleep))*5
-    )
-  );
+  return predictiveRiskScore({
+    stress:p.wellness.stress, sleep:p.wellness.sleep, fatigue:p.wellness.fatigue,
+    workload:p.wellness.workload, connection:p.wellness.connection,
+    dutyHours:p.dutyHours, deploymentDays:p.deploymentDays, leaveGap:p.leaveGap,
+    trainingLoad:p.trainingLoad, restHours:p.restHours, transferCount:p.transferCount
+  });
 }
 function riskOf(p: Personnel): Risk {
   const s=riskScore(p);
